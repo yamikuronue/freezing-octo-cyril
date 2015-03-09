@@ -4,6 +4,15 @@
 # Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
 VAGRANTFILE_API_VERSION = "2"
 
+  $provisionScript = <<SCRIPT
+    #Node & NPM
+    sudo apt-get install -y nodejs
+    sudo apt-get install -y npm
+    cd /vagrant
+    npm install
+SCRIPT
+
+
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   # Every Vagrant virtual environment requires a box to build off of.
@@ -16,18 +25,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # config.vm.synced_folder "../data", "/vagrant_data"
 
   #PROVISIONING: Just use shell. 
-
-
-  $script = <<SCRIPT
-    #Node & NPM
-    curl -sL https://deb.nodesource.com/setup | sudo bash -
-    sudo apt-get install -y nodejs
-SCRIPT
-
-
-  Vagrant.configure("2") do |config|
-      config.vm.provision "shell",
-      inline: $script
-  end
-
+  config.vm.provision "shell",
+  inline: $provisionScript
 end
