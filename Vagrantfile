@@ -6,8 +6,9 @@ VAGRANTFILE_API_VERSION = "2"
 
   $provisionScript = <<SCRIPT
     #Node & NPM
+    sudo apt-get install -y curl
+    curl -sL https://deb.nodesource.com/setup | sudo bash -  #We have to install from a newer location, the repo version is too old
     sudo apt-get install -y nodejs
-    sudo apt-get install -y npm
     cd /vagrant
     npm install
 SCRIPT
