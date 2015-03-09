@@ -1,0 +1,25 @@
+{
+  "name": "freezing-octo-cyril",
+  "version": "1.0.0",
+  "description": "A todo list app",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yamikuronue/freezing-octo-cyril.git"
+  },
+  "keywords": [
+    "todo"
+  ],
+  "author": "Yamikuronue",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/yamikuronue/freezing-octo-cyril/issues"
+  },
+  "homepage": "https://github.com/yamikuronue/freezing-octo-cyril",
+  "dependencies": {
+    "hapi": "^8.2.0"
+  }
+}
