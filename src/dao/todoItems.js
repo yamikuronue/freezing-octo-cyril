@@ -44,5 +44,9 @@ module.exports = {
 			stmt.run(name, text, state);
 			stmt.finalize();
 		}, callback);
+	},
+
+	destroy: function(callback) {
+		db.close(callback);
 	}
 };
