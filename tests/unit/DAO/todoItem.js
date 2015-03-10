@@ -11,11 +11,13 @@ define([
 			assert.isArray(items, "Items was not an array");
 			assert.isTrue(items.length < 1,"Items had 1 or more items.");
 
-			dao.addItem("Test", "test", 0);
+			dao.addItem("Test", "test", 0, function() {
+				var items = dao.getItems();
+				assert.isArray(items, "Items was not an array");
+				assert.isTrue(items.length === 1,"Items did not contain one item.");
+			});
 
-			items = dao.getItems();
-			assert.isArray(items, "Items was not an array");
-			assert.isTrue(items.length === 1,"Items did not contain one item.");
+			
 		}
 	});
 });

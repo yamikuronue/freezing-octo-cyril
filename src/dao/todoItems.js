@@ -18,7 +18,7 @@ module.exports = {
 		});
 	},
 
-	getItems: function() {
+	getItems: function(callback) {
 		var exists = fs.existsSync(file);
 		if (!exists) this.createDB(file);
 
@@ -32,17 +32,17 @@ module.exports = {
 				text: row.itemText,
 				state: !!row.state
 			});
-		});
+		}, callback);
 
 		return items;
 	},
 
-	addItem: function(name, text, state) {
+	addItem: function(name, text, state, callback) {
 
 		db.serialize(function() {
 			var stmt = db.prepare("INSERT INTO TodoItems VALUES (?,?,?)");
 			stmt.run(name, text, state);
 			stmt.finalize();
-		});
+		}, callback);
 	}
 };
