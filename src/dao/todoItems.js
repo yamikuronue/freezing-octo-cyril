@@ -1,10 +1,7 @@
 var fs = require("fs");
-var file = "todo.db";
+var file = "src/dao/todo.db";
 var sqlite3 = require("sqlite3").verbose();
-var db = new sqlite3.Database(file, sqlite3.OPEN_READWRITE, function(err) {
-	if (err) console.log("ERROR: " + err);
-});
-
+var db;
 console.log("loaded");
 
 module.exports = {
@@ -12,7 +9,10 @@ module.exports = {
 	createDB: function(filename) {
 		sqlite3.verbose();
 		file = filename;
-		
+		db = new sqlite3.Database(file, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, function(err) {
+			if (err) console.log("ERROR: " + err);
+		});
+
 		db.serialize(function() {
 				db.run("CREATE TABLE TodoItems (itemID INTEGER PRIMARY KEY, itemName TEXT, itemText TEXT, state INTEGER)");
 		});
@@ -20,7 +20,7 @@ module.exports = {
 
 	getItems: function(callback) {
 		var exists = fs.existsSync(file);
-		if (!exists) this.createDB(file);
+		if (!exists || !db) this.createDB(file);
 
 		var items = [];
 
