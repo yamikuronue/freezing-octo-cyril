@@ -19,11 +19,12 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # Every Vagrant virtual environment requires a box to build off of.
   config.vm.box = "hashicorp/precise64"
 
-  # Share an additional folder to the guest VM. The first argument is
-  # the path on the host to the actual folder. The second argument is
-  # the path on the guest to mount the folder. And the optional third
-  # argument is a set of non-required options.
-  # config.vm.synced_folder "../data", "/vagrant_data"
+
+  #Hosts file plugin
+  #To install: vagrant plugin install vagrant-hostsupdater
+  #This will let you access the VM at vagrantVM.local once it's up
+  config.vm.network :private_network, ip: "192.168.3.10"
+  config.vm.hostname = "vagrantVM.local"
 
   #PROVISIONING: Just use shell. 
   config.vm.provision "shell",
