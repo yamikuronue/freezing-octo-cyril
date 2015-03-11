@@ -51,6 +51,10 @@ define({
 		packages: [ { name: "freezing-octo-cyril", location: "." } ]
 	},
 
+	reporters: [
+		"pretty", "lcovhtml"
+	],
+
 	// Non-functional test suite(s) to run in each browser
 	suites: [ "freezing-octo-cyril/tests/unit/DAO/todoItem" ],
 

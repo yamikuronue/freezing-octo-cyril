@@ -18,31 +18,57 @@ define([
 			});
 			
 		},
-		createsDB: function() {
-			exists = IsThere.sync("unitTest.db");
-			assert.isFalse(exists);
-
-			dao.createDB("unitTest.db", function() {
-				exists = IsThere.sync("unitTest.db");
-				assert.isTrue(exists);
-			});
-		},
+		
 		tests: {
+			createsDB: function() {
+				exists = IsThere.sync("unitTest.db");
+				assert.isFalse(exists);
+
+				dao.createDB("unitTest.db", function() {
+					exists = IsThere.sync("unitTest.db");
+					assert.isTrue(exists);
+				});
+			},
 			insert: function () {
 				dao.createDB("unitTest.db");
-				var items = dao.getItems();
-				assert.isArray(items, "Items was not an array");
-				assert.isTrue(items.length < 1,"Items had 1 or more items.");
+				var deferred = this.async(10000);
 
-				dao.addItem("Test", "test", 0, function() {
-					var items = dao.getItems();
-					assert.isArray(items, "Items was not an array");
-					assert.isTrue(items.length === 1,"Items did not contain one item.");
-				});		
+				dao.getItems(deferred.rejectOnError(
+					function (items) {
+						assert.isArray(items, "Items was not an array");
+						assert.isTrue(items.length < 1,"Items had 1 or more items.");
+						
+						dao.addItem("Test", "test", 0, function(err) {
+							assert.isUndefined(err, "No error should occur.");
+							dao.getItems(
+								deferred.callback(
+									function(items) {
+										assert.isArray(items, "Items was not an array");
+										assert.isTrue(items.length === 1,"Items did not contain one item.");
+									}
+								)
+							);
+						});
+					}
+				));
 			},
 
-			errors: function() {
-				
+			errorInserting: function() {
+				dao.createDB("unitTest.db");
+				var deferred = this.async(10000);
+
+				dao.getItems(deferred.rejectOnError(
+					function (items) {
+						assert.isArray(items, "Items was not an array");
+						assert.isTrue(items.length < 1,"Items had 1 or more items.");
+						
+						dao.addItem("Test", "test", "notANumber", function(err) {
+							assert.isDefined(err, "No error occurred when inserting bad data!");
+							console.log(err);
+							
+						});
+					}
+				));
 			}
 		}
 	});

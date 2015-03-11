@@ -25,25 +25,29 @@ module.exports = {
 		var items = [];
 
 		db.each("SELECT itemID,itemName,itemText,state FROM TodoItems", function(err, row) {
-			Console.log(row);
+			console.log(row);
 			items.push({
 				id: row.itemID,
 				name: row.itemName,
 				text: row.itemText,
 				state: !!row.state
 			});
-		}, callback);
-
-		return items;
+		}, function() {
+			callback(items);
+		});
 	},
 
 	addItem: function(name, text, state, callback) {
 
-		db.serialize(function() {
-			var stmt = db.prepare("INSERT INTO TodoItems VALUES (?,?,?)");
-			stmt.run(name, text, state);
-			stmt.finalize();
-		}, callback);
+		var stmt = db.prepare("INSERT INTO TodoItems (itemName, itemText, state) VALUES (?,?,?)");
+
+		stmt.run(name, text, state, function(err) {
+			if (err) {
+				callback(err);
+			} else {
+				stmt.finalize(callback);
+			}
+		});
 	},
 
 	destroy: function(callback) {
