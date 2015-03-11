@@ -2,30 +2,48 @@ var fs = require("fs");
 var file = "src/dao/todo.db";
 var sqlite3 = require("sqlite3").verbose();
 var db;
-console.log("loaded");
+sqlite3.verbose();
+function errorprint(err){
+	if(err) console.error(arguments);
+};
 
 module.exports = {
 	version: "1.0",
+
+	close: function(callback) {
+		db.close(callback);
+	},
+
+	open: function(filename, callback) {
+		file = filename;
+		db = new sqlite3.Database(file, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, function(err) {
+			if (err) console.log("ERROR: " + err);
+		});
+	},
+
 	createDB: function(filename) {
-		sqlite3.verbose();
 		file = filename;
 		db = new sqlite3.Database(file, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, function(err) {
 			if (err) console.log("ERROR: " + err);
 		});
 
-		db.serialize(function() {
-				db.run("CREATE TABLE TodoItems (itemID INTEGER PRIMARY KEY, itemName TEXT, itemText TEXT, state INTEGER)");
-		});
+		db.serialize();
+			db.run("DROP TABLE IF EXISTS TodoItems",errorprint);
+			db.run("DROP TABLE IF EXISTS TodoLists",errorprint);
+
+
+			db.run("CREATE TABLE TodoLists (listID INTEGER PRIMARY KEY, listName TEXT)",errorprint);
+			db.run("CREATE TABLE TodoItems (itemID INTEGER PRIMARY KEY, listID INTEGER NOT NULL, itemName TEXT, itemText TEXT, state INTEGER, FOREIGN KEY(listID) REFERENCES TodoLists(listID))",errorprint);
+		db.parallelize();
 	},
 
-	getItems: function(callback) {
+	getItems: function(listID, callback) {
 		var exists = fs.existsSync(file);
 		if (!exists || !db) this.createDB(file);
 
 		var items = [];
 
-		db.each("SELECT itemID,itemName,itemText,state FROM TodoItems", function(err, row) {
-			console.log(row);
+		db.each("SELECT itemID,itemName,itemText,state FROM TodoItems WHERE listID=" + listID, function(err, row) {
 			items.push({
 				id: row.itemID,
 				name: row.itemName,
@@ -37,11 +55,11 @@ module.exports = {
 		});
 	},
 
-	addItem: function(name, text, state, callback) {
+	addItem: function(listID, name, text, state, callback) {
 
-		var stmt = db.prepare("INSERT INTO TodoItems (itemName, itemText, state) VALUES (?,?,?)");
+		var stmt = db.prepare("INSERT INTO TodoItems (listID, itemName, itemText, state) VALUES (?,?,?,?)");
 
-		stmt.run(name, text, state, function(err) {
+		stmt.run(listID, name, text, state, function(err) {
 			if (err) {
 				callback(err);
 			} else {
@@ -50,7 +68,15 @@ module.exports = {
 		});
 	},
 
-	destroy: function(callback) {
-		db.close(callback);
+	createList: function(listName, callback) {
+		var stmt = db.prepare("INSERT INTO TodoLists (listName) VALUES (?)");
+		stmt.run(listName, function(err) {
+			if (err) {
+				callback(err);
+			} else {
+				stmt.finalize();
+				db.get("SELECT last_insert_rowid() AS listID FROM TodoLists", callback);
+			}
+		});
 	}
 };
