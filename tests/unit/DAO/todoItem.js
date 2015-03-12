@@ -11,7 +11,7 @@ define([
 			
 		},
 		after: function() {
-			
+			dao.close();
 		},
 		
 		tests: {
@@ -32,6 +32,52 @@ define([
 				dao.close(function() {
 					fs.unlinkSync("/home/vagrant/unitTest.db");
 				});
+			},
+			implicitDBCreate_OnListFetch: function() {
+				var deferred = this.async(10000);
+
+				//No explicit DB create
+				dao.file = ":memory:";
+				dao.getLists(deferred.rejectOnError(function(items) {
+					assert.isNotNull(items, "items was null");
+					assert.lengthOf(items, 0, "Items already had lists when created");
+					dao.close(deferred.callback(function(){}));
+				}));
+			},
+			implicitDBCreate_OnListCreate: function() {
+				var deferred = this.async(10000);
+
+				//No explicit DB create
+				dao.file = ":memory:";
+				dao.createList("implicitCreateTest",deferred.rejectOnError(function(err, row) {
+					assert.isNull(err, "No error should occur.");
+					assert.isNotNull(row, "row was null");
+					dao.close(deferred.callback(function(){}));
+				}));
+			},
+			implicitDBCreate_OnItemFetch: function() {
+				var deferred = this.async(10000);
+
+				//No explicit DB create
+				dao.file = ":memory:";
+				dao.getItems(1, deferred.rejectOnError(function(items) {
+					assert.isNotNull(items, "items was null");
+					assert.lengthOf(items, 0, "Items already had items when created");
+					dao.close(deferred.callback(function(){}));
+				}));
+			},
+			implicitDBCreate_OnItemCreate: function() {
+				var deferred = this.async(10000);
+
+				//No explicit DB create
+				dao.file = ":memory:";
+				dao.addItem(12, "Test", "test", 0, deferred.rejectOnError(
+					function(err) {
+						assert.isDefined(err, "Error should occur.");
+						assert.equal(err.code, "SQLITE_CONSTRAINT", "Wrong error occurred");
+						dao.close(deferred.callback(function(){}));
+					}
+				));
 			},
 			createList: function() {
 				var deferred = this.async(10000);
@@ -73,9 +119,11 @@ define([
 										deferred.rejectOnError(
 											function(items) {
 												assert.isArray(items, "Items was not an array");
-												assert.isTrue(items.length === 1,"Items did not contain one item.");
+												assert.lengthOf(items, 1,"Items did not contain one item.");
 												dao.close(deferred.callback(
-													function() {}));
+													function(err) {
+														assert.isNull(err, "No error should occur.");
+													}));
 											}
 										)
 									);
@@ -84,7 +132,20 @@ define([
 						));
 					}));
 				});
+			},
+			errorInsertingItem: function() {
+				var deferred = this.async(10000);
+
+				dao.createDB(":memory:", function() {
+					//Add item to nonexistant list
+					dao.addItem(12, "Test", "test", 0, deferred.callback(
+						function(err) {
+							assert.isDefined(err, "Error should occur.");
+							assert.equal(err.code, "SQLITE_CONSTRAINT", "Wrong error occurred");
+						}
+					));
+				});
 			}
-		}
+		} //End tests
 	});
 });

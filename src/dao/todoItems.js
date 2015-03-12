@@ -1,5 +1,4 @@
 var fs = require("fs");
-var file = "src/dao/todo.db";
 var sqlite3 = require("sqlite3").verbose();
 var db;
 sqlite3.verbose();
@@ -9,22 +8,16 @@ function errorprint(err){
 
 module.exports = {
 	version: "1.0",
+	file: "src/dao/todo.db",
 
 	close: function(callback) {
 		db.close(callback);
 		db = null;
 	},
 
-	open: function(filename, callback) {
-		file = filename;
-		db = new sqlite3.Database(file, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, function(err) {
-			if (err) console.log("ERROR: " + err);
-		});
-	},
-
 	createDB: function(filename, callback) {
-		file = filename;
-		db = new sqlite3.Database(file, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, function(err) {
+		this.file = filename;
+		db = new sqlite3.Database(this.file, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, function(err) {
 			if (err) console.log("ERROR: " + err);
 		});
 
@@ -34,12 +27,20 @@ module.exports = {
 
 			db.run("CREATE TABLE TodoLists (listID INTEGER PRIMARY KEY, listName TEXT)",errorprint);
 			db.run("CREATE TABLE TodoItems (itemID INTEGER PRIMARY KEY, listID INTEGER NOT NULL, itemName TEXT, itemText TEXT, state INTEGER, FOREIGN KEY(listID) REFERENCES TodoLists(listID))",errorprint);
+
+			db.run("PRAGMA foreign_keys = ON");
 		db.parallelize();
-		callback();
+		if (callback) callback();
 	},
 
 	getItems: function(listID, callback) {
-		if (!db) this.createDB(file);
+		if (!db) {
+			var self = this;
+			this.createDB(this.file, function() {
+				self.getItems(listID, callback);
+			});
+			return;
+		};
 
 		var items = [];
 
@@ -56,7 +57,15 @@ module.exports = {
 	},
 
 	addItem: function(listID, name, text, state, callback) {
-		if (!db) this.createDB(file);
+		if (!db) {
+			var self = this;
+			this.createDB(this.file, function() {
+				self.addItem(listID, name, text, state, callback);
+			});
+			return;
+		};
+
+
 		var stmt = db.prepare("INSERT INTO TodoItems (listID, itemName, itemText, state) VALUES (?,?,?,?)");
 
 		stmt.run(listID, name, text, state, function(err) {
@@ -69,6 +78,14 @@ module.exports = {
 	},
 
 	createList: function(listName, callback) {
+		if (!db) {
+			var self = this;
+			this.createDB(this.file, function() {
+				self.createList(listName, callback);
+			});
+			return;
+		};
+
 		var stmt = db.prepare("INSERT INTO TodoLists (listName) VALUES (?)");
 		stmt.run(listName, function(err) {
 			if (err) {
@@ -81,7 +98,13 @@ module.exports = {
 	},
 
 	getLists: function(callback) {
-		if (!db) this.createDB(file);
+		if (!db) {
+			var self = this;
+			this.createDB(this.file, function() {
+				self.getLists(callback);
+			});
+			return;
+		};
 
 		var items = [];
 		db.each("SELECT listID, listName FROM TodoLists", function(err, row){
