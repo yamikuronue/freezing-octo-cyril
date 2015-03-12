@@ -39,6 +39,7 @@ define([
 
 					var req = http.request(postOptions, function(res) {
 						assert.equal(200, res.statusCode, "Status code should be 200 OK");
+						res.setEncoding("utf8");
 
 						res.on("data", function (chunk) {
 							
@@ -46,23 +47,26 @@ define([
 
 							var regex = /^List created! ID: ([0-9\.]+)$/;
 							var result = regex.test(chunk);
-							assert.isNotNull(result, "Output did not conform; got " + chunk);
+							assert.isTrue(result, "Output did not conform; got " + chunk);
 							var listID = regex.exec(chunk)[1];
 
 							var getOptions = {
 								host: "localhost",
 								port: portToUse,
 								path: "/list/" + listID,
-								method: "get",
-								headers: {
-									"Content-Type": "application/x-www-form-urlencoded",
-									"Content-Length": postData.length
-								}
+								method: "get"
 							};
 
-							console.log("Sending get");
-							var getReq = http.request(getOptions, deferred.callback(function(res) {
-								assert.equal(200, res.statusCode, "Status code should be 200 OK");
+							var getReq = http.request(getOptions, deferred.callback(function(res1) {
+								assert.equal(200, res1.statusCode, "Status code should be 200 OK");
+
+								res1.on("data", function (chunk1) {
+
+									var regex = /^List items: /;
+									var result = regex.test(chunk1);
+									assert.isTrue(result, "Output did not conform; got " + chunk);
+								});
+
 							}));
 
 							getReq.on("error", function(e) {

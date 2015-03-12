@@ -16,7 +16,6 @@ module.exports = {
 	},
 
 	fetchList: function(req, reply) {
-		console.log("Fetching list");
 		var id = req.params.id;
 
 		dao.getItems(id, function(err, items) {

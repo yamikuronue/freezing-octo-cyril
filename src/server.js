@@ -9,24 +9,6 @@ module.exports = {
 		port = port || 3000;
 		server.connection({ "port": port });
 
-		//Route: http://<host>:3000
-		server.route({
-			method: "GET",
-			path: "/",
-			handler: function (request, reply) {
-				reply("Hello, world!");
-			}
-		});
-
-		//Route: http://<host>:3000/name
-		server.route({
-			method: "GET",
-			path: "/{name}",
-			handler: function (request, reply) {
-				reply("Hello, " + encodeURIComponent(request.params.name) + "!");
-			}
-		});
-
 	/*	//Route: http://<host>:3000/list/<name>
 		server.route({
 			method: "PUT",
@@ -45,7 +27,7 @@ module.exports = {
 			path: "/list/{id}",
 			handler: TodoController.fetchList
 		});
-		
+
 		server.route({
 			method: "PUT",
 			path: "/list/add",

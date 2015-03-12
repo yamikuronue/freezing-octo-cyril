@@ -11,7 +11,6 @@ define([
 			
 		},
 		after: function() {
-			dao.close();
 		},
 		
 		tests: {
