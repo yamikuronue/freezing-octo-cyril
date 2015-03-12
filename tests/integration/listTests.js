@@ -35,7 +35,7 @@ define([
 						}
 					};
 
-					var deferred = this.async(10000);
+					var deferred = this.async(30000);
 
 					var req = http.request(postOptions, function(res) {
 						assert.equal(200, res.statusCode, "Status code should be 200 OK");
@@ -68,6 +68,8 @@ define([
 							getReq.on("error", function(e) {
 								assert.fail("Unexpected error when retrieving: " + e);
 							});
+
+							getReq.end();
 
 
 						});

@@ -41,6 +41,12 @@ module.exports = {
 		});*/
 
 		server.route({
+			method: "GET",
+			path: "/list/{id}",
+			handler: TodoController.fetchList
+		});
+		
+		server.route({
 			method: "PUT",
 			path: "/list/add",
 			handler: TodoController.createList
@@ -53,11 +59,7 @@ module.exports = {
 		});
 
 
-		server.route({
-			method: "GET",
-			path: "/list/{id}",
-			handler: TodoController.fetchList
-		});
+
 
 
 		server.start(function () {
