@@ -133,7 +133,7 @@ module.exports = {
 				callback(err, null);
 			} else {
 				stmt.finalize();
-				callback(null, row.listName);
+				callback(null, row ? row.listName : null);
 			}
 		});
 
