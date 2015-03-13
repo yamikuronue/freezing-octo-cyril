@@ -29,5 +29,21 @@ module.exports = {
 				reply.view("listitems", info);
 			}
 		});
+	},
+
+	addItem: function(req, reply) {
+		var id = req.params.id;
+
+		var name = req.payload.name;
+		var text = req.payload.text;
+		var state = req.payload.state;
+
+		dao.addItem(id, name, text, state, function(err) {
+			if (err) {
+				reply("ERROR: " + err);
+			} else {
+				reply("Item created!");
+			}
+		});
 	}
 };
