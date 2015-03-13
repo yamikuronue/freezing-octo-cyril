@@ -1,0 +1,8 @@
+<h1>TODO Lists:</h1>
+<ul>
+{{#items}}<li><a href="/list/{{id}}">{{name}}</li>{{/items}}
+</ul>
+<form method="post" action="/list/add">
+<input type="text" name="name" />
+<input type="submit" />
+</form>

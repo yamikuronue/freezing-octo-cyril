@@ -15,20 +15,42 @@ module.exports = {
 		});
 	},
 
-	fetchList: function(req, reply) {
-		var id = req.params.id;
-
+	fetchAllLists: function(req, reply) {
 		var info = {};
-		info.listName = req.params.id; //TODO: make this the name;
-
-		dao.getItems(id, function(err, items) {
+		dao.getLists(function(err, items){
 			if (err) {
 				reply("ERROR: " + err);
 			} else {
 				info.items = items;
-				reply.view("listitems", info);
+				reply.view("listlists", info);
 			}
 		});
+	},
+
+	fetchList: function(req, reply) {
+		var id = req.params.id;
+
+		
+
+		dao.getListNameFromID(id, function(err, name) {
+			if (err) {
+					reply("ERROR: " + err);
+				} else {
+
+				var info = {};
+				info.listName = name;
+				info.listID = id;
+
+				dao.getItems(id, function(err, items) {
+					if (err) {
+						reply("ERROR: " + err);
+					} else {
+						info.items = items;
+						reply.view("listitems", info);
+					}
+				});
+			}			
+		});		
 	},
 
 	addItem: function(req, reply) {

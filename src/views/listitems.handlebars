@@ -2,3 +2,10 @@
 <ul>
 {{#items}}<li><b>{{name}}</b>: {{text}}</li>{{/items}}
 </ul>
+<br/>
+<h2>Add item:</h2>
+<form method="post" action="/list/{{listID}}/add">
+Name:<input type="text" name="name" />
+Text:<textarea name="text"> Description of item </textarea>
+<input type="submit" />
+</form>

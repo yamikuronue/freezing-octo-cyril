@@ -117,5 +117,25 @@ module.exports = {
 			//TODO: error handling
 			callback(null, items);
 		});
+	},
+	getListNameFromID: function(id, callback) {
+		if (!this.db) {
+			var self = this;
+			this.createDB(this.file, function() {
+				self.getListNameFromID(id,callback);
+			});
+			return;
+		};
+
+		var stmt = this.db.prepare("SELECT listName FROM TodoLists WHERE listID = ?");
+		stmt.get(id, function(err, row) {
+			if (err) {
+				callback(err, null);
+			} else {
+				stmt.finalize();
+				callback(null, row.listName);
+			}
+		});
+
 	}
 };

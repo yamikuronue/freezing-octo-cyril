@@ -23,6 +23,12 @@ module.exports = {
 		});*/
 
 		server.route({
+			method: "GET",
+			path: "/list",
+			handler: TodoController.fetchAllLists
+		});
+
+		server.route({
 			method: "POST",
 			path: "/list/{id}/add",
 			handler: TodoController.addItem
