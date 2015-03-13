@@ -42,7 +42,14 @@ module.exports = {
 
 
 
-
+		/*Views*/
+		server.views({
+			engines: {
+				handlebars: require("handlebars")
+			},
+			path: "./views",
+			relativeTo: __dirname
+		});
 
 		server.start(function () {
 		});

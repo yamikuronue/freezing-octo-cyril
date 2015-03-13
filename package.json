@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/yamikuronue/freezing-octo-cyril",
   "dependencies": {
+    "handlebars": "^3.0.0",
     "hapi": "^8.2.0",
     "is-there": "^1.1.0",
     "sqlite3": "^3.0.5"

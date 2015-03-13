@@ -62,9 +62,9 @@ define([
 
 								res1.on("data", function (chunk1) {
 
-									var regex = /^List items: /;
+									var regex = /^<h1>TODO List:/;
 									var result = regex.test(chunk1);
-									assert.isTrue(result, "Output did not conform; got " + chunk);
+									assert.isTrue(result, "Output did not conform; got " + chunk1);
 								});
 
 							}));

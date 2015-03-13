@@ -18,11 +18,15 @@ module.exports = {
 	fetchList: function(req, reply) {
 		var id = req.params.id;
 
+		var info = {};
+		info.listName = req.params.id; //TODO: make this the name;
+
 		dao.getItems(id, function(err, items) {
 			if (err) {
 				reply("ERROR: " + err);
 			} else {
-				reply("List items: " + row.listID);
+				info.items = items;
+				reply.view("listitems", info);
 			}
 		});
 	}
