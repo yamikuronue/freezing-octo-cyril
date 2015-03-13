@@ -52,7 +52,7 @@ module.exports = {
 				state: !!row.state
 			});
 		}, function() {
-			callback(items);
+			callback(null, items);
 		});
 	},
 
@@ -113,7 +113,8 @@ module.exports = {
 				name: row.listName
 			});
 		}, function() {
-			callback(items);
+			//TODO: error handling
+			callback(null, items);
 		});
 	}
 };

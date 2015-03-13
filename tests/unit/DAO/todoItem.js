@@ -37,7 +37,7 @@ define([
 
 				//No explicit DB create
 				dao.file = ":memory:";
-				dao.getLists(deferred.rejectOnError(function(items) {
+				dao.getLists(deferred.rejectOnError(function(err, items) {
 					assert.isNotNull(items, "items was null");
 					assert.lengthOf(items, 0, "Items already had lists when created");
 					dao.close(deferred.callback(function(){}));
@@ -59,7 +59,7 @@ define([
 
 				//No explicit DB create
 				dao.file = ":memory:";
-				dao.getItems(1, deferred.rejectOnError(function(items) {
+				dao.getItems(1, deferred.rejectOnError(function(err, items) {
 					assert.isNotNull(items, "items was null");
 					assert.lengthOf(items, 0, "Items already had items when created");
 					dao.close(deferred.callback(function(){}));
@@ -82,7 +82,7 @@ define([
 				var deferred = this.async(10000);
 
 				dao.createDB(":memory:", function() {
-					dao.getLists(deferred.rejectOnError(function(items) {
+					dao.getLists(deferred.rejectOnError(function(err, items) {
 							assert.isNotNull(items, "items was null");
 							assert.isTrue(items.length === 0, "Items already had lists when created");
 
@@ -91,7 +91,7 @@ define([
 								var listID = row.listID;
 								assert.isNotNull(listID);
 								
-								dao.getLists(deferred.callback(function(items) {
+								dao.getLists(deferred.callback(function(err, items) {
 									assert.isNotNull(items, "items was null");
 									assert.isTrue(items.length === 1, "Items did not contain one list");
 								}));
@@ -109,14 +109,14 @@ define([
 						var listID = row.listID;
 						assert.isNotNull(listID);
 						dao.getItems(listID, deferred.rejectOnError(
-							function (items) {
+							function (err, items) {
 								assert.isArray(items, "Items was not an array");
 								assert.isTrue(items.length < 1,"Items had 1 or more items.");
 								dao.addItem(listID, "Test", "test", 0, function(err) {
 									assert.isUndefined(err, "No error should occur.");
 									dao.getItems(listID,
 										deferred.rejectOnError(
-											function(items) {
+											function(err, items) {
 												assert.isArray(items, "Items was not an array");
 												assert.lengthOf(items, 1,"Items did not contain one item.");
 												dao.close(deferred.callback(
