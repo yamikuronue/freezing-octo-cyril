@@ -3,8 +3,10 @@ define([
     "intern/chai!assert",
     "intern/dojo/node!../../../src/dao/todoItems",
     "intern/dojo/node!fs",
-    "intern/dojo/node!is-there"
-    ], function (registerSuite, assert, dao, fs, IsThere) {
+    "intern/dojo/node!is-there",
+    "intern/dojo/node!sinon",
+    "intern/dojo/node!sqlite3"
+    ], function (registerSuite, assert, dao, fs, IsThere, sinon, sqlite3) {
 	registerSuite({
 		name: "todoItemTests",
 		before: function() {
@@ -146,5 +148,92 @@ define([
 				});
 			}
 		} //End tests
+	});
+
+	/*The following test suite uses Sinon to test hard-to-produce SQLite errors*/
+	registerSuite({
+		name: "todoItemErrorTests",
+		beforeEach: function() {
+			sandbox = sinon.sandbox.create();
+
+		},
+		afterEach: function() {
+			dao.db = null;
+			sandbox.restore();
+		},
+		
+		tests: {
+			errorCreatingList: function() {
+				var deferred = this.async(10000);
+				var stmtStub = {
+					run: sandbox.stub()
+				};
+				stmtStub.run.yields("Fake error!");
+
+				var mockDB = {
+					prepare: function() {
+						return stmtStub;
+					}
+				};
+				
+				dao.db = mockDB;
+
+				dao.createList("This is a list", deferred.callback( 
+					function(err) {
+						assert.isTrue(stmtStub.run.called, "Statement was not called");
+						assert.equal(err, "Fake error!");
+					}
+				));
+			}, 
+			errorCreatingDB1: function() {
+				var deferred = this.async(10000);
+
+				var mockDB = {
+					run: sandbox.stub(),
+					serialize: sandbox.stub(),
+					parallelize: sandbox.stub()
+				};
+
+				mockDB.run.yields("Fake error!");
+
+				var stub = sandbox.stub(sqlite3, "Database");
+				stub.returns(mockDB);
+
+				//Since all we do is print to the console, mock that. 
+				var errorStub = sandbox.spy(console, "error");
+
+				dao.createDB(":memory:", deferred.callback( 
+					function(err) {
+						assert.equal(dao.db, mockDB, "DB was not mocked!");
+						assert.isTrue(mockDB.run.called, "mockDB was not called");
+						assert.isTrue(errorStub.called, "Error was not printed");
+						assert.equal(errorStub.args[0][0][0], "Fake error!", "Error was not printed correctly");
+					}
+				));
+			},
+			errorCreatingDB2: function() {
+				var deferred = this.async(10000);
+				var mockDB = {
+					run: sandbox.stub(),
+					serialize: sandbox.stub(),
+					parallelize: sandbox.stub()
+				};
+
+				mockDB.run.yields("Fake error!");
+
+				var stub = sandbox.stub(sqlite3, "Database");
+				stub.yields("Fake error!");
+				stub.returns(mockDB);
+
+				//Since all we do is print to the console, mock that. 
+				var errorStub = sandbox.stub(console, "error");
+
+				dao.createDB(":memory:", deferred.callback( 
+					function(err) {
+						assert.equal(err, "Fake error!", "Error was not returned");
+					}
+				));
+			}
+		}//end Tests
 	});
 });

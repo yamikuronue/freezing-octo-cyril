@@ -56,10 +56,10 @@ define({
 	],
 
 	// Non-functional test suite(s) to run in each browser
-	suites: [ "freezing-octo-cyril/tests/unit/DAO/todoItem", "freezing-octo-cyril/tests/integration/listTests.js" ],
+	suites: [ "freezing-octo-cyril/tests/unit/DAO/todoItem", "freezing-octo-cyril/tests/unit/Controllers/todoControllerTests" , "freezing-octo-cyril/tests/integration/listTests.js"],
 
 	// Functional test suite(s) to run in each browser once non-functional tests are completed
-	functionalSuites: [ /* "myPackage/tests/functional" */ ],
+	functionalSuites: [  ],
 
 	// A regular expression matching URLs to files that should not be included in code coverage analysis
 	excludeInstrumentation: /^(?:tests|node_modules)\//
