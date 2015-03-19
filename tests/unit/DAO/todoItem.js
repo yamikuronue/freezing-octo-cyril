@@ -5,8 +5,9 @@ define([
     "intern/dojo/node!fs",
     "intern/dojo/node!is-there",
     "intern/dojo/node!sinon",
-    "intern/dojo/node!sqlite3"
-    ], function (registerSuite, assert, dao, fs, IsThere, sinon, sqlite3) {
+    "intern/dojo/node!sqlite3",
+    "intern/dojo/node!async"
+    ], function (registerSuite, assert, dao, fs, IsThere, sinon, sqlite3, async) {
 	registerSuite({
 		name: "todoItemTests",
 		before: function() {
@@ -83,69 +84,99 @@ define([
 			createList: function() {
 				var deferred = this.async(10000);
 
-				dao.createDB(":memory:", function() {
-					dao.getLists(deferred.rejectOnError(function(err, items) {
-							assert.isNotNull(items, "items was null");
-							assert.isTrue(items.length === 0, "Items already had lists when created");
+				async.series([
+					function(callback) {
+						dao.createDB(":memory:",callback);
+					},
+					function(callback) {
+						dao.getLists(deferred.rejectOnError(callback));
+					},
+					function(callback) {
+						dao.createList("insertTest", deferred.rejectOnError(callback));
+					}, 
+					function(callback) {
+						dao.getLists(deferred.rejectOnError(callback));
+					}
+					],
+					deferred.callback(function(err, results) {
+						var listsBeforeInsert = results[1];
+						var createdRow = results[2];
+						var listsAfterInsert  = results[3];
 
-							dao.createList("insertTest", deferred.rejectOnError(
-							function(err, row) {
-								var listID = row.listID;
-								assert.isNotNull(listID);
-								
-								dao.getLists(deferred.callback(function(err, items) {
-									assert.isNotNull(items, "items was null");
-									assert.isTrue(items.length === 1, "Items did not contain one list");
-								}));
-							}));
+						assert.isNotNull(listsBeforeInsert, "items was null");
+						assert.isTrue(listsBeforeInsert.length === 0, "Items already had lists when created");
 
-						}));
-				});
+						assert.isNotNull(createdRow.listID, "Row did not create successfully.");
+
+						assert.isNotNull(listsAfterInsert, "items was null");
+						assert.isTrue(listsAfterInsert.length === 1, "Items did not contain one list");
+					}));
 			},
 			insert: function () {
 				var deferred = this.async(10000);
 
-				dao.createDB(":memory:", function() {
-					dao.createList("insertTest", deferred.rejectOnError(
-					function(err, row) {
-						var listID = row.listID;
-						assert.isNotNull(listID);
-						dao.getItems(listID, deferred.rejectOnError(
-							function (err, items) {
-								assert.isArray(items, "Items was not an array");
-								assert.isTrue(items.length < 1,"Items had 1 or more items.");
-								dao.addItem(listID, "Test", "test", 0, function(err) {
-									assert.isUndefined(err, "No error should occur.");
-									dao.getItems(listID,
-										deferred.rejectOnError(
-											function(err, items) {
-												assert.isArray(items, "Items was not an array");
-												assert.lengthOf(items, 1,"Items did not contain one item.");
-												dao.close(deferred.callback(
-													function(err) {
-														assert.isNull(err, "No error should occur.");
-													}));
-											}
-										)
-									);
-								});
+				var listID;
+				async.series([
+					function(callback) {
+						dao.createDB(":memory:", callback);
+					},
+					function(callback) {
+						dao.createList("insertTest", function(err, row) {
+							listID = row.listID;
+
+							assert.isNotNull(listID);
+							callback(err);
+						});
+					},
+					function(callback) {
+						dao.getItems(listID, callback); 
+					}
+				], 
+				deferred.rejectOnError(function (err, results) {
+					assert.isUndefined(err, "No error should occur.");
+
+					var items = results[2];
+					assert.isArray(items, "Items was not an array");
+					assert.isTrue(items.length < 1,"Items had 1 or more items.");
+
+					async.series([
+							function(callback) {
+								dao.addItem(listID, "Test", "test", 0,callback);
+							},
+							function(callback) {
+								dao.getItems(listID,callback);
 							}
-						));
-					}));
-				});
+						],
+						deferred.rejectOnError(function(err, results) {
+							assert.isUndefined(err, "No error should occur.");
+
+							items = results[1];
+							assert.isArray(items, "Items was not an array");
+							assert.lengthOf(items, 1,"Items did not contain one item.");
+
+							dao.close(deferred.callback(
+								function(err) {
+									assert.isNull(err, "No error should occur.");
+								}));
+						}));
+				}));
 			},
 			errorInsertingItem: function() {
 				var deferred = this.async(10000);
 
-				dao.createDB(":memory:", function() {
-					//Add item to nonexistant list
-					dao.addItem(12, "Test", "test", 0, deferred.callback(
-						function(err) {
-							assert.isDefined(err, "Error should occur.");
-							assert.equal(err.code, "SQLITE_CONSTRAINT", "Wrong error occurred");
-						}
-					));
-				});
+				async.series([
+					function(callback) {
+						dao.createDB(":memory:",callback);
+					},
+					function(callback) {
+						dao.addItem(12, "Test", "test", 0, callback);
+					}
+
+					],
+					deferred.callback(function(err, results) {
+						assert.isDefined(err, "Error should occur.");
+						assert.equal(err.code, "SQLITE_CONSTRAINT", "Wrong error occurred");
+					}));
 			}
 		} //End tests
 	});
