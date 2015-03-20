@@ -5,9 +5,29 @@ module.exports = {
 	_server: null,
 
 	start: function(port) {
-		var server = new Hapi.Server();
+		var server = new Hapi.Server( {
+			connections: {
+				routes: {
+					files: {
+						relativeTo: __dirname
+					}
+				}
+			}
+		});
 		port = port || 3000;
 		server.connection({ "port": port });
+
+
+		server.route({    // Other assets If you have
+			method: "GET",
+			path: "/assets/{param*}",
+			handler: {
+				directory: {
+					path: "./assets",
+					listing: true
+				}
+			}
+		});
 
 	/*	//Route: http://<host>:3000/list/<name>
 		server.route({
@@ -60,7 +80,9 @@ module.exports = {
 				handlebars: require("handlebars")
 			},
 			path: "./views",
-			relativeTo: __dirname
+			relativeTo: __dirname,
+			layout: true,
+			defaultExtension: "handlebars"
 		});
 
 		server.start(function () {

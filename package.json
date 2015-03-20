@@ -24,7 +24,8 @@
     "hapi": "^8.2.0",
     "is-there": "^1.1.0",
     "sinon": "^1.13.0",
-    "sqlite3": "^3.0.5"
+    "sqlite3": "^3.0.5",
+    "async": "^0.9.0"
   },
   "devDependencies": {
     "intern": "^2.2.2"
