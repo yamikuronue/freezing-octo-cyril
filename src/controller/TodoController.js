@@ -1,4 +1,5 @@
 var dao = require("../dao/todoItems");
+var accepts = require("accepts");
 
 
 module.exports = {
@@ -11,6 +12,19 @@ module.exports = {
 				reply("ERROR: " + err);
 			} else {
 				reply("List created! ID: " + row.listID);
+			}
+		});
+	},
+
+	updateList: function(req, reply) {
+		var name = req.payload.name;
+
+		dao.renameList(name, function(err, row) {
+			//Show view based on error or not error?
+			if (err) {
+				reply("ERROR: " + err);
+			} else {
+				reply("List renamed!");
 			}
 		});
 	},
@@ -29,9 +43,8 @@ module.exports = {
 
 	fetchList: function(req, reply) {
 		var id = req.params.id;
-
+		var accept = accepts(req.raw.req);
 		
-
 		dao.getListNameFromID(id, function(err, name) {
 			if (err) {
 					reply("ERROR: " + err);
@@ -46,7 +59,17 @@ module.exports = {
 						reply("ERROR: " + err);
 					} else {
 						info.items = items;
-						reply.view("listitems", info);
+						switch(accept.type(["json", "html"])) {
+							case "json":
+								res.setHeader("Content-Type", "application/json");
+								reply(items);
+							break;
+							default:
+								reply.view("listitems", info);
+							break;
+							}
+						
+						
 					}
 				});
 			}			
@@ -65,6 +88,18 @@ module.exports = {
 				reply("ERROR: " + err);
 			} else {
 				reply("Item created!");
+			}
+		});
+	},
+
+	completeItem: function(req, reply) {
+		var id = req.params.id;
+
+		dao.completeItem(id, function(err) {
+			if (err) {
+				reply("ERROR: " + err);
+			} else {
+				reply("Item completed!");
 			}
 		});
 	}

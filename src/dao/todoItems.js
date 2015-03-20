@@ -77,6 +77,27 @@ module.exports = {
 		});
 	},
 
+	completeItem: function(itemID, callback) {
+		if (!this.db) {
+			var self = this;
+			this.createDB(this.file, function() {
+				self.completeItem(itemID, callback);
+			});
+			return;
+		};
+
+
+		var stmt = this.db.prepare("UPDATE TodoItems SET state=1 WHERE itemID=?");
+		var self = this;
+		stmt.run(itemID, function(err) {
+			if (err) {
+				callback(err);
+			} else {
+				stmt.finalize(callback);
+			}
+		});
+	},
+
 	createList: function(listName, callback) {
 		if (!this.db) {
 			var self = this;
@@ -94,6 +115,26 @@ module.exports = {
 			} else {
 				stmt.finalize();
 				self.db.get("SELECT last_insert_rowid() AS listID FROM TodoLists", callback);
+			}
+		});
+	},
+
+	renameList: function(listId, newName, callback) {
+		if (!this.db) {
+			var self = this;
+			this.createDB(this.file, function() {
+				self.renameList(listId, newName, callback);
+			});
+			return;
+		};
+
+		var stmt = this.db.prepare("UPDATE TodoLists SET listName=? WHERE listID=?");
+		var self = this;
+		stmt.run(newName, listId, function(err) {
+			if (err) {
+				callback(err);
+			} else {
+				stmt.finalize(callback);
 			}
 		});
 	},

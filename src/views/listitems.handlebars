@@ -1,11 +1,24 @@
 <h1>TODO List: {{listName}}</h1>
-<ul>
-{{#items}}<li><b>{{name}}</b>: {{text}}</li>{{/items}}
+<div id="completeSuccess" class="alert alert-success" style="display:none">
+    <a href="#" class="close" data-dismiss="alert">&times;</a>
+    <strong>Success!</strong> Your item has been completed.
+</div>
+<div id="addSuccess" class="alert alert-success" style="display:none">
+    <a href="#" class="close" data-dismiss="alert">&times;</a>
+    <strong>Success!</strong> Your item has been added.
+</div>
+<ul id="itemsList">
+{{#items}}<li class="listItem" id={{id}}><input type="checkbox" class="complete">{{#if state}}<strike>{{/if}}<b>{{name}}</b>: {{text}}</li>{{#if state}}</strike>{{/if}}{{/items}}
 </ul>
 <br/>
 <h2>Add item:</h2>
-<form method="post" action="/list/{{listID}}/add">
+<form id="addItemForm" method="post" action="/list/{{listID}}/add">
 Name:<input type="text" name="name" />
 Text:<textarea name="text"> Description of item </textarea>
-<input type="submit" />
+<input id="addItemButton" type="submit" name="Add item"/>
 </form>
+
+<script src="/assets/listhandler.js"></script>
+<script id="itemTemplate" type="text/x-handlebars-template">
+{{#items}}<li class="listItem" id={{id}}><input type="checkbox" class="complete">{{#if state}}<strike>{{/if}}<b>{{name}}</b>: {{text}}</li>{{#if state}}</strike>{{/if}}{{/items}}
+</script>

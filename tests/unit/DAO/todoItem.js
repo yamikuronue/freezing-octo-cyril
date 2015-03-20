@@ -112,6 +112,42 @@ define([
 						assert.isTrue(listsAfterInsert.length === 1, "Items did not contain one list");
 					}));
 			},
+			renameList: function() {
+				var deferred = this.async(10000);
+
+				async.series([
+					function(callback) {
+						dao.createDB(":memory:",callback);
+					},
+					function(callback) {
+						dao.getLists(deferred.rejectOnError(callback));
+					},
+					function(callback) {
+						dao.createList("insertTest", deferred.rejectOnError(callback));
+					}
+					],
+					deferred.callback(function(err, results) {
+						var listsBeforeInsert = results[1];
+						var createdRow = results[2];
+						
+						async.series([
+							function(callback) {
+								dao.renameList(createdRow.listID, "renamedTest", deferred.rejectOnError(callback));
+							},
+							function(callback) {
+								dao.getLists(deferred.rejectOnError(callback));
+							}
+						],
+						deferred.callback(function(err, results) {
+							var listsAfterRename  = results[1];
+
+							assert.isNotNull(listsAfterRename, "items was null");
+							assert.isTrue(listsAfterRename.length === 1, "Items did not contain one list");
+							assert.isTrue(listsAfterRename[0].listName === "renamedTest", "List was not renamed");
+						}));
+
+					}));
+			},
 			insert: function () {
 				var deferred = this.async(10000);
 

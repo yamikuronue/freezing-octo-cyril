@@ -29,7 +29,7 @@ module.exports = {
 			}
 		});
 
-	/*	//Route: http://<host>:3000/list/<name>
+		/*List actions*/
 		server.route({
 			method: "PUT",
 			path: "/list/{id}",
@@ -40,18 +40,12 @@ module.exports = {
 			method: "POST",
 			path: "/list/{id}",
 			handler: TodoController.updateList
-		});*/
+		});
 
 		server.route({
 			method: "GET",
 			path: "/list",
 			handler: TodoController.fetchAllLists
-		});
-
-		server.route({
-			method: "POST",
-			path: "/list/{id}/add",
-			handler: TodoController.addItem
 		});
 
 		server.route({
@@ -73,6 +67,18 @@ module.exports = {
 		});
 
 
+		/*Item actions*/
+		server.route({
+			method: "POST",
+			path: "/list/{id}/add",
+			handler: TodoController.addItem
+		});
+
+		server.route({
+			method: "GET",
+			path: "/item/{id}/complete",
+			handler: TodoController.completeItem
+		});
 
 		/*Views*/
 		server.views({

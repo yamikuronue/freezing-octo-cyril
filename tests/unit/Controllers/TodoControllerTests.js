@@ -67,7 +67,11 @@ define([
 				},
 				fetchList_success: function() {
 					/*Setup and mocking*/
-					var stub = sandbox.stub(dao, "getItems");
+					var stubGetItems = sandbox.stub(dao, "getItems");
+					var stubGetName = sandbox.stub(dao, "getListNameFromID");
+
+					stubGetName.yields(null, "List name");
+
 					var fakeList = [{
 						id: 1,
 						name: "Item 1",
@@ -81,7 +85,7 @@ define([
 						state: 1
 					}
 					];
-					stub.yields(null, fakeList);
+					stubGetItems.yields(null, fakeList);
 
 					var fakeReq = {
 						params: {
@@ -93,8 +97,10 @@ define([
 						view: sandbox.spy()
 					};
 
+
 					var expected = {
-						listName: 69,
+						listID: 69,
+						listName: "List name",
 						items: fakeList
 					};
 
@@ -103,8 +109,12 @@ define([
 
 
 					/*Verification*/
-					assert(stub.called, "DAO was not called");
-					assert.equal(69, stub.args[0][0], "List ID not passed correctly.");
+					assert(stubGetName.called, "DAO was not called");
+					assert.equal(69, stubGetItems.args[0][0], "List ID not passed correctly.");
+
+					assert(stubGetItems.called, "DAO was not called");
+					assert.equal(69, stubGetItems.args[0][0], "List ID not passed correctly.");
+
 					assert(fakeReply.view.called, "Reply was not called");
 					assert.equal("listitems", fakeReply.view.args[0][0], "Wrong view invoked");
 					assert.deepEqual(fakeReply.view.args[0][1], expected, "Reply args not passed correctly.");
