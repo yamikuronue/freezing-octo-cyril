@@ -6,6 +6,13 @@ var server = require("../../src/server");
 var assert = require("chai").assert;
 
 describe("The system", function() {
+	before(function(){
+		server.start(portToUse);
+	});
+
+	after(function() {
+		server.stop();
+	});
 	it("should create and fetch lists", function(done) {
 		var postData = querystring.stringify({
 			"name" : "Test List 1"
@@ -66,6 +73,7 @@ describe("The system", function() {
 
 		});
 		req.on("error", function(e) {
+			console.log(e);
 			assert.fail("Unexpected error when submitting: " + e);
 		});
 
