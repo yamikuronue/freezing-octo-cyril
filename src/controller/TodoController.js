@@ -61,15 +61,12 @@ module.exports = {
 						info.items = items;
 						switch(accept.type(["json", "html"])) {
 							case "json":
-								res.setHeader("Content-Type", "application/json");
 								reply(items);
 							break;
 							default:
 								reply.view("listitems", info);
 							break;
-							}
-						
-						
+						}
 					}
 				});
 			}			

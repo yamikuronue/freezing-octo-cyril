@@ -5,6 +5,7 @@ var dao = require("../../../src/dao/todoItems");
 var controller = require("../../../src/controller/TodoController");
 
 var assert = require("chai").assert;
+var accepts = require("accepts");
 
 describe("Todo Controller", function() {
 	beforeEach(function() {
@@ -39,7 +40,7 @@ describe("Todo Controller", function() {
 			assert(fakeReply.calledWith("List created! ID: 42"), "Reply was not sent");
 	});
 
-	it("should report errors when creating lists" , function() {
+	it("should report errors when creating lists" , function(done) {
 		/*Setup and mocking*/
 		var stub = sandbox.stub(dao, "createList");
 		stub.yields("Fake Error!", null);
@@ -50,16 +51,18 @@ describe("Todo Controller", function() {
 			}
 		};
 
-		var fakeReply = sandbox.spy();
+		var fakeReply = function(reply) {
+			/*Verification*/
+			assert(stub.called, "DAO was not called");
+			assert.equal("Fake list", stub.args[0][0], "Name not passed correctly.");
+			assert.equal("ERROR: Fake Error!", reply, "Reply not sent correctly.");
+			done();
+		};
 
 		/*Call OOT*/
 		controller.createList(fakeReq, fakeReply);
 
-		/*Verification*/
-		assert(stub.called, "DAO was not called");
-		assert.equal("Fake list", stub.args[0][0], "Name not passed correctly.");
-		assert(fakeReply.called, "Reply was not sent");
-		assert.equal("ERROR: Fake Error!", fakeReply.args[0][0], "Reply not sent correctly.");
+		
 	});
 
 	it("should be able to retrieve a list", function() {
@@ -87,6 +90,13 @@ describe("Todo Controller", function() {
 		var fakeReq = {
 			params: {
 				id: 69
+			},
+			raw: {
+				req: {
+					headers: {
+						accept: "html"
+					}
+				}
 			}
 		};
 
@@ -117,7 +127,7 @@ describe("Todo Controller", function() {
 		assert.deepEqual(fakeReply.view.args[0][1], expected, "Reply args not passed correctly.");
 	});
 
-	it("should report errors when fetching a list", function() {
+	it("should report errors when fetching a list", function(done) {
 		/*Setup and mocking*/
 		var stub = sandbox.stub(dao, "getItems");
 		stub.yields("Fake Error!", null);
@@ -125,23 +135,31 @@ describe("Todo Controller", function() {
 		var fakeReq = {
 			params: {
 				id: 69
+			},
+			raw: {
+				req: {
+					headers: {
+						accept: "html"
+					}
+				}
 			}
 		};
 
-		var fakeReply = sandbox.spy();
-
+		var fakeReply = function(reply) {
+			/*Verification*/
+			assert(stub.called, "DAO was not called");
+			assert.equal(69, stub.args[0][0], "Name not passed correctly.");
+			assert.equal("ERROR: Fake Error!", reply, "Reply not sent correctly.");
+			done();
+		};
 
 		/*Call OOT*/
 		controller.fetchList(fakeReq, fakeReply);
 
-		/*Verification*/
-		assert(stub.called, "DAO was not called");
-		assert.equal(69, stub.args[0][0], "Name not passed correctly.");
-		assert(fakeReply.called, "Reply was not sent");
-		assert.equal("ERROR: Fake Error!", fakeReply.args[0][0], "Reply not sent correctly.");
+		
 	});
 
-	it("should be able to add an item", function() {
+	it("should be able to add an item", function(done) {
 		/*Setup and mocking*/
 		var stub = sandbox.stub(dao, "addItem");
 		stub.yields(null);
@@ -157,16 +175,16 @@ describe("Todo Controller", function() {
 			}
 		};
 
-		var fakeReply = sandbox.spy();
+		var fakeReply = function(reply) {
+			/*Verification*/
+			assert(stub.called, "DAO was not called");
+			assert.isTrue(stub.calledWith(75, "Item 1", "The first item", 0), "Information not passed correctly to DAO.");
+			assert.equal("Item created!", reply, "Reply was not sent correctly");
+			done();
+		};
 
 		/*Call OOT*/
 		controller.addItem(fakeReq, fakeReply);
-
-
-		/*Verification*/
-		assert(stub.called, "DAO was not called");
-		assert.isTrue(stub.calledWith(75, "Item 1", "The first item", 0), "Information not passed correctly to DAO.");
-		assert(fakeReply.calledWith("Item created!"), "Reply was not sent");
 	});
 
 	it("should report any errors when adding items", function() {
@@ -185,15 +203,14 @@ describe("Todo Controller", function() {
 			}
 		};
 
-		var fakeReply = sandbox.spy();
+		var fakeReply = function(reply) {
+			/*Verification*/
+			assert(stub.called, "DAO was not called");
+			assert.isTrue(stub.calledWith(75, "Item 1", "The first item", 0), "Information not passed correctly to DAO.");
+			assert.equal("ERROR: Fake Error!", reply, "Reply not sent correctly.");
+		};
 
 		/*Call OOT*/
-		controller.addItem(fakeReq, fakeReply);
-
-		/*Verification*/
-		assert(stub.called, "DAO was not called");
-		assert.isTrue(stub.calledWith(75, "Item 1", "The first item", 0), "Information not passed correctly to DAO.");
-		assert(fakeReply.called, "Reply was not sent");
-		assert.equal("ERROR: Fake Error!", fakeReply.args[0][0], "Reply not sent correctly.");
+		controller.addItem(fakeReq, fakeReply);		
 	});
 });
