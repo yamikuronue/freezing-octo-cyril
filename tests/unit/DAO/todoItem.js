@@ -169,7 +169,7 @@ describe("todoItem DAO", function() {
 
 						assert.isNotNull(listsAfterRename, "items was null");
 						assert.isTrue(listsAfterRename.length === 1, "Items did not contain one list");
-						assert.isTrue(listsAfterRename[0].listName === "renamedTest", "List was not renamed");
+						assert.isTrue(listsAfterRename[0].name === "renamedTest", "List was not renamed");
 						done();
 					});
 
@@ -178,7 +178,8 @@ describe("todoItem DAO", function() {
 
 		it("should report any errors during creation", function(done) {
 			var stmtStub = {
-				run: sandbox.stub()
+				run: sandbox.stub(),
+				finalize: function() {}
 			};
 			stmtStub.run.yields("Fake error!");
 

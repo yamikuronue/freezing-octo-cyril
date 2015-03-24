@@ -70,6 +70,7 @@ module.exports = {
 
 		stmt.run(listID, name, text, state, function(err) {
 			if (err) {
+				stmt.finalize();
 				callback(err);
 			} else {
 				stmt.finalize(callback);
@@ -91,6 +92,7 @@ module.exports = {
 		var self = this;
 		stmt.run(itemID, function(err) {
 			if (err) {
+				stmt.finalize();
 				callback(err);
 			} else {
 				stmt.finalize(callback);
@@ -111,6 +113,7 @@ module.exports = {
 		var self = this;
 		stmt.run(listName, function(err) {
 			if (err) {
+				stmt.finalize();
 				callback(err);
 			} else {
 				stmt.finalize();
@@ -132,6 +135,7 @@ module.exports = {
 		var self = this;
 		stmt.run(newName, listId, function(err) {
 			if (err) {
+				stmt.finalize();
 				callback(err);
 			} else {
 				stmt.finalize(callback);
@@ -171,6 +175,7 @@ module.exports = {
 		var stmt = this.db.prepare("SELECT listName FROM TodoLists WHERE listID = ?");
 		stmt.get(id, function(err, row) {
 			if (err) {
+				stmt.finalize();
 				callback(err, null);
 			} else {
 				stmt.finalize();
