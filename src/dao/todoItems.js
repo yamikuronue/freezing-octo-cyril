@@ -17,19 +17,21 @@ module.exports = {
 	},
 
 	open: function(filename, callback) {
+		this.file = filename;
+
 		var exists = IsThere.sync(this.file);
-		if (filename === ":memory:" || !exists) {
+		if (this.file === ":memory:" || !exists) {
 			this.createDB(filename, callback);
 		} else {
 			this.db = new sqlite3.Database(this.file, sqlite3.OPEN_READWRITE, function(err) {
-				if (err) callback(err);
+				callback(err);
 			});
 		}
 	},
 
 	createDB: function(filename, callback) {
 		this.file = filename;
-		this.db = new sqlite3.Database(this.file, sqlite3.OPEN_CREATE, function(err) {
+		this.db = new sqlite3.Database(this.file, sqlite3.OPEN_READWRITE || sqlite3.OPEN_CREATE, function(err) {
 			if (err) callback(err);
 		});
 
