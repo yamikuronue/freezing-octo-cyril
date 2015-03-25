@@ -1,6 +1,7 @@
 var fs = require("fs");
 var sqlite3 = require("sqlite3").verbose();
 sqlite3.verbose();
+var IsThere = require("is-there");
 function errorprint(err){
 	if(err) console.error(arguments);
 };
@@ -15,9 +16,20 @@ module.exports = {
 		this.db = null;
 	},
 
+	open: function(filename, callback) {
+		var exists = IsThere.sync(this.file);
+		if (filename === ":memory:" || !exists) {
+			this.createDB(filename, callback);
+		} else {
+			this.db = new sqlite3.Database(this.file, sqlite3.OPEN_READWRITE, function(err) {
+				if (err) callback(err);
+			});
+		}
+	},
+
 	createDB: function(filename, callback) {
 		this.file = filename;
-		this.db = new sqlite3.Database(this.file, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, function(err) {
+		this.db = new sqlite3.Database(this.file, sqlite3.OPEN_CREATE, function(err) {
 			if (err) callback(err);
 		});
 
@@ -36,7 +48,7 @@ module.exports = {
 	getItems: function(listID, callback) {
 		if (!this.db) {
 			var self = this;
-			this.createDB(this.file, function() {
+			this.open(this.file, function() {
 				self.getItems(listID, callback);
 			});
 			return;
@@ -59,7 +71,7 @@ module.exports = {
 	addItem: function(listID, name, text, state, callback) {
 		if (!this.db) {
 			var self = this;
-			this.createDB(this.file, function() {
+			this.open(this.file, function() {
 				self.addItem(listID, name, text, state, callback);
 			});
 			return;
@@ -81,7 +93,7 @@ module.exports = {
 	completeItem: function(itemID, callback) {
 		if (!this.db) {
 			var self = this;
-			this.createDB(this.file, function() {
+			this.open(this.file, function() {
 				self.completeItem(itemID, callback);
 			});
 			return;
@@ -103,7 +115,7 @@ module.exports = {
 	createList: function(listName, callback) {
 		if (!this.db) {
 			var self = this;
-			this.createDB(this.file, function() {
+			this.open(this.file, function() {
 				self.createList(listName, callback);
 			});
 			return;
@@ -125,7 +137,7 @@ module.exports = {
 	renameList: function(listId, newName, callback) {
 		if (!this.db) {
 			var self = this;
-			this.createDB(this.file, function() {
+			this.open(this.file, function() {
 				self.renameList(listId, newName, callback);
 			});
 			return;
@@ -146,7 +158,7 @@ module.exports = {
 	getLists: function(callback) {
 		if (!this.db) {
 			var self = this;
-			this.createDB(this.file, function() {
+			this.open(this.file, function() {
 				self.getLists(callback);
 			});
 			return;
@@ -166,7 +178,7 @@ module.exports = {
 	getListNameFromID: function(id, callback) {
 		if (!this.db) {
 			var self = this;
-			this.createDB(this.file, function() {
+			this.open(this.file, function() {
 				self.getListNameFromID(id,callback);
 			});
 			return;
