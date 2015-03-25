@@ -8,8 +8,6 @@ var dao = require("../../../src/dao/todoItems");
 
 var assert = require("chai").assert;
 
-
-
 describe("todoItem DAO", function() {
 	beforeEach(function() {
 		sandbox = sinon.sandbox.create();
@@ -21,23 +19,27 @@ describe("todoItem DAO", function() {
 	});
 
 	describe("The database", function() {
-		it("should be created explicitly on demand", function() {
+
+		it("should be created explicitly on demand", function(done) {
 			exists = IsThere.sync("/home/vagrant/unitTest.db");
 			if (exists) {
 				fs.unlinkSync("/home/vagrant/unitTest.db");
 				exists = IsThere.sync("/home/vagrant/unitTest.db");
 			}
 			
-			assert.isFalse(exists);
+			assert.isFalse(exists, "Database file should not yet exist");
 
 			dao.createDB("/home/vagrant/unitTest.db", function() {
-				exists = IsThere.sync("unitTest.db");
-				assert.isTrue(exists);
+				exists = IsThere.sync("/home/vagrant/unitTest.db");
+				assert.isTrue(exists, "Database file should now exist");
+
+				dao.close(function() {
+					fs.unlinkSync("/home/vagrant/unitTest.db");
+					done();
+				});
 			});
 
-			dao.close(function() {
-				fs.unlinkSync("/home/vagrant/unitTest.db");
-			});
+			
 		});
 
 		it("should be created implicitly when lists are fetched", function(done) {
@@ -263,6 +265,99 @@ describe("todoItem DAO", function() {
 				assert.equal(err.code, "SQLITE_CONSTRAINT", "Wrong error occurred");
 			done();
 			});
+		});
+	});
+
+	describe("A user", function() {
+		it("should be able to be created", function(done) {
+			async.series([
+				function(callback) {
+					dao.createDB(":memory:",callback);
+				},
+				function(callback) {
+					dao.getUsers(callback);
+				},
+				function(callback) {
+					dao.createUser("Bambi", callback);
+				}, 
+				function(callback) {
+					dao.getUsers(callback);
+				}
+				],
+				function(err, results) {
+					var usersBeforeInsert = results[1];
+					var createdUser = results[2];
+					var usersAfterInsert  = results[3];
+
+					assert.isNotNull(usersBeforeInsert, "items was null");
+					assert.isTrue(usersBeforeInsert.length === 0, "Items already had lists when created");
+
+					assert.isNotNull(createdUser.userID, "User did not create successfully.");
+
+					assert.isNotNull(usersAfterInsert, "items was null");
+					assert.isTrue(usersAfterInsert.length === 1, "Items did not contain one list");
+
+					done();
+				});
+		});
+
+		it("should be able to be renamed", function(done) {
+			async.series([
+				function(callback) {
+					dao.createDB(":memory:",callback);
+				},
+				function(callback) {
+					dao.getLists(callback);
+				},
+				function(callback) {
+					dao.createList("insertTest", callback);
+				}
+				],
+				function(err, results) {
+					var listsBeforeInsert = results[1];
+					var createdRow = results[2];
+					
+					async.series([
+						function(callback) {
+							dao.renameList(createdRow.listID, "renamedTest",callback);
+						},
+						function(callback) {
+							dao.getLists(callback);
+						}
+					],
+					function(err, results) {
+						var listsAfterRename  = results[1];
+
+						assert.isNotNull(listsAfterRename, "items was null");
+						assert.isTrue(listsAfterRename.length === 1, "Items did not contain one list");
+						assert.isTrue(listsAfterRename[0].name === "renamedTest", "List was not renamed");
+						done();
+					});
+
+				});
+		});
+
+		it("should report any errors during creation", function(done) {
+			var stmtStub = {
+				run: sandbox.stub(),
+				finalize: function() {}
+			};
+			stmtStub.run.yields("Fake error!");
+
+			var mockDB = {
+				prepare: function() {
+					return stmtStub;
+				}
+			};
+			
+			dao.db = mockDB;
+
+			dao.createUser("Thumper",function(err) {
+					assert.isTrue(stmtStub.run.called, "Statement was not called");
+					assert.equal(err, "Fake error!");
+					done();
+				}
+			);
 		});
 	});
 });

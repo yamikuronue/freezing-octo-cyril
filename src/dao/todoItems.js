@@ -12,8 +12,12 @@ module.exports = {
 	db: null,
 
 	close: function(callback) {
-		this.db.close(callback);
-		this.db = null;
+		if (this.db) {
+			this.db.close(callback);
+			this.db = null;
+		} else {
+			callback();
+		}
 	},
 
 	open: function(filename, callback) {
@@ -38,8 +42,10 @@ module.exports = {
 		this.db.serialize();
 			this.db.run("DROP TABLE IF EXISTS TodoItems",errorprint);
 			this.db.run("DROP TABLE IF EXISTS TodoLists",errorprint);
+			this.db.run("DROP TABLE IF EXISTS Users",errorprint);
 
-			this.db.run("CREATE TABLE TodoLists (listID INTEGER PRIMARY KEY, listName TEXT)",errorprint);
+			this.db.run("CREATE TABLE Users (userID INTEGER PRIMARY KEY, username TEXT)",errorprint);
+			this.db.run("CREATE TABLE TodoLists (listID INTEGER PRIMARY KEY, listName TEXT, owner INTEGER, FOREIGN KEY(owner) REFERENCES Users(userID))",errorprint);
 			this.db.run("CREATE TABLE TodoItems (itemID INTEGER PRIMARY KEY, listID INTEGER NOT NULL, itemName TEXT, itemText TEXT, state INTEGER, FOREIGN KEY(listID) REFERENCES TodoLists(listID))",errorprint);
 
 			this.db.run("PRAGMA foreign_keys = ON", errorprint);
@@ -194,6 +200,70 @@ module.exports = {
 			} else {
 				stmt.finalize();
 				callback(null, row ? row.listName : null);
+			}
+		});
+	},
+
+	getUsers: function(callback) {
+		if (!this.db) {
+			var self = this;
+			this.open(this.file, function() {
+				self.getUsers(callback);
+			});
+			return;
+		};
+
+		var items = [];
+		this.db.each("SELECT userID, username FROM Users", function(err, row){
+			items.push({
+				id: row.userID,
+				name: row.username
+			});
+		}, function() {
+			//TODO: error handling
+			callback(null, items);
+		});
+	},
+
+	createUser: function(username, callback) {
+		if (!this.db) {
+			var self = this;
+			this.open(this.file, function() {
+				self.createUser(username, callback);
+			});
+			return;
+		};
+
+		var stmt = this.db.prepare("INSERT INTO Users (username) VALUES (?)");
+		var self = this;
+		stmt.run(username, function(err) {
+			if (err) {
+				stmt.finalize();
+				callback(err);
+			} else {
+				stmt.finalize();
+				self.db.get("SELECT last_insert_rowid() AS userID FROM Users", callback);
+			}
+		});
+	},
+
+	getUserNameFromID: function(id, callback) {
+		if (!this.db) {
+			var self = this;
+			this.open(this.file, function() {
+				self.getUserNameFromID(id,callback);
+			});
+			return;
+		};
+
+		var stmt = this.db.prepare("SELECT username FROM Users WHERE userID = ?");
+		stmt.get(id, function(err, row) {
+			if (err) {
+				stmt.finalize();
+				callback(err, null);
+			} else {
+				stmt.finalize();
+				callback(null, row ? row.username : null);
 			}
 		});
 
