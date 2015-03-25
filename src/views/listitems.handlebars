@@ -24,6 +24,11 @@ Text:<textarea name="text"> Description of item </textarea>
 <input id="addItemButton" type="submit" name="Add item"/>
 </form>
 
+<script>
+$( document ).ready(function() {
+	$("#nav-itemsPage").addClass("active");
+});
+</script>
 <script src="/assets/listhandler.js"></script>
 <script id="itemTemplate" type="text/x-handlebars-template">
 \{{#items}}<li class="listItem" id=\{{id}}><input type="checkbox" class="complete">\{{#if state}}<strike>\{{/if}}<b>\{{name}}</b>: \{{text}}</li>\{{#if state}}</strike>\{{/if}}\{{/items}}
