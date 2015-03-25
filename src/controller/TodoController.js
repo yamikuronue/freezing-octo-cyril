@@ -59,10 +59,11 @@ module.exports = {
 						reply("ERROR: " + err);
 					} else {
 						info.items = items;
-						switch(accept.type(["json", "html"])) {
-							case "json":
-								reply(items);
+						switch(accept.type(["text/html", "application/json"])) {
+							case "application/json":
+								reply(info);
 							break;
+							case "text/html":
 							default:
 								reply.view("listitems", info);
 							break;
