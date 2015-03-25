@@ -7,12 +7,18 @@
     <a href="#" class="close" data-dismiss="alert">&times;</a>
     <strong>Success!</strong> Your item has been added.
 </div>
+{{#if msg}}
+<div id="message" class="alert">
+    <a href="#" class="close" data-dismiss="alert">&times;</a>
+    Message would go
+</div>
+{{/if}}
 <ul id="itemsList">
 {{#items}}<li class="listItem" id={{id}}><input type="checkbox" class="complete">{{#if state}}<strike>{{/if}}<b>{{name}}</b>: {{text}}</li>{{#if state}}</strike>{{/if}}{{/items}}
 </ul>
 <br/>
 <h2>Add item:</h2>
-<form id="addItemForm" method="post" action="/list/{{listID}}/add">
+<form id="addItemForm" method="post" action="/list/{{listID}}/add"  headers='{"Accept": "application/json"}'>
 Name:<input type="text" name="name" />
 Text:<textarea name="text"> Description of item </textarea>
 <input id="addItemButton" type="submit" name="Add item"/>
@@ -20,5 +26,5 @@ Text:<textarea name="text"> Description of item </textarea>
 
 <script src="/assets/listhandler.js"></script>
 <script id="itemTemplate" type="text/x-handlebars-template">
-{{#items}}<li class="listItem" id={{id}}><input type="checkbox" class="complete">{{#if state}}<strike>{{/if}}<b>{{name}}</b>: {{text}}</li>{{#if state}}</strike>{{/if}}{{/items}}
+\{{#items}}<li class="listItem" id=\{{id}}><input type="checkbox" class="complete">\{{#if state}}<strike>\{{/if}}<b>\{{name}}</b>: \{{text}}</li>\{{#if state}}</strike>\{{/if}}\{{/items}}
 </script>

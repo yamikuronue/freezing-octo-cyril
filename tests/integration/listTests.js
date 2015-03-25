@@ -110,7 +110,7 @@ describe("The system", function() {
 			path: "/list/1",
 			method: "GET",
 			headers: {
-				"Accept": "application/json"
+				"Accept": "application/json; charset=utf-8"
 			}
 		};
 

@@ -3,6 +3,9 @@ $( document ).ready(function() {
 		var id = $(eventObject.target).parent().attr("id");
 		$.ajax({
 			url: "/item/" + id + "/complete",
+			headers: {
+				Accept : "application/json; charset=utf-8" 
+			},
 			context: document.body
 		}).done(function() {
 			$( "#completeSuccess" ).slideDown();
@@ -18,7 +21,12 @@ $( document ).ready(function() {
 			headers: {
 				Accept : "application/json; charset=utf-8" 
 			},
-			success : function(response) {  
+			success : function(response) {
+				var source   = $("#itemTemplate").html();
+				var template = Handlebars.compile(source);
+
+				var html = template(response);
+				$("#itemsList").html(html);
 				console.log(response);
 			} 
 		});
