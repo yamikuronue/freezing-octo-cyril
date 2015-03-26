@@ -1,5 +1,6 @@
 var Hapi = require("hapi");
 var TodoController = require("./controller/TodoController");
+var AuthController = require("./controller/AuthController");
 
 module.exports = {
 	_server: null,
@@ -18,7 +19,7 @@ module.exports = {
 		server.connection({ "port": port });
 
 
-		server.route({    // Other assets If you have
+		server.route({    // Other assets
 			method: "GET",
 			path: "/assets/{param*}",
 			handler: {
@@ -27,6 +28,28 @@ module.exports = {
 					listing: true
 				}
 			}
+		});
+
+		/*Authentication */
+		server.state("session", {
+			ttl: null,
+			isSecure: false, //TODO: ought to be true
+			isHttpOnly: true,
+			encoding: "base64json",
+			clearInvalid: false, // remove invalid cookies
+			strictHeader: true // don't allow violations of RFC 6265
+		});
+
+		server.route({
+			method: "GET",
+			path: "/auth/login",
+			handler: AuthController.loginForm
+		});
+
+		server.route({
+			method: "POST",
+			path: "/auth/login",
+			handler: AuthController.loginFormParse
 		});
 
 		/*List actions*/

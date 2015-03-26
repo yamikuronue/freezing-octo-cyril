@@ -2,6 +2,8 @@ var fs = require("fs");
 var sqlite3 = require("sqlite3").verbose();
 sqlite3.verbose();
 var IsThere = require("is-there");
+var bcrypt = require("bcrypt");
+
 function errorprint(err){
 	if(err) console.error(arguments);
 };
@@ -44,7 +46,7 @@ module.exports = {
 			this.db.run("DROP TABLE IF EXISTS TodoLists",errorprint);
 			this.db.run("DROP TABLE IF EXISTS Users",errorprint);
 
-			this.db.run("CREATE TABLE Users (userID INTEGER PRIMARY KEY, username TEXT)",errorprint);
+			this.db.run("CREATE TABLE Users (userID INTEGER PRIMARY KEY, username TEXT, password TEXT)",errorprint);
 			this.db.run("CREATE TABLE TodoLists (listID INTEGER PRIMARY KEY, listName TEXT, owner INTEGER, FOREIGN KEY(owner) REFERENCES Users(userID))",errorprint);
 			this.db.run("CREATE TABLE TodoItems (itemID INTEGER PRIMARY KEY, listID INTEGER NOT NULL, itemName TEXT, itemText TEXT, state INTEGER, FOREIGN KEY(listID) REFERENCES TodoLists(listID))",errorprint);
 
@@ -225,7 +227,7 @@ module.exports = {
 		});
 	},
 
-	createUser: function(username, callback) {
+	createUser: function(username, password, callback) {
 		if (!this.db) {
 			var self = this;
 			this.open(this.file, function() {
@@ -234,15 +236,44 @@ module.exports = {
 			return;
 		};
 
-		var stmt = this.db.prepare("INSERT INTO Users (username) VALUES (?)");
+		var passHash = bcrypt.hashSync(password, 10);
+		var stmt = this.db.prepare("INSERT INTO Users (username, password) VALUES (?,?)");
+
 		var self = this;
-		stmt.run(username, function(err) {
+		stmt.run(username, passHash, function(err) {
 			if (err) {
 				stmt.finalize();
 				callback(err);
 			} else {
 				stmt.finalize();
 				self.db.get("SELECT last_insert_rowid() AS userID FROM Users", callback);
+			}
+		});
+	},
+
+	authenticateUser: function(username, password, callback) {
+		if (!this.db) {
+			var self = this;
+			this.open(this.file, function() {
+				self.authenticateUser(username, callback);
+			});
+			return;
+		};
+
+		var stmt = this.db.prepare("SELECT password FROM Users WHERE username = ?");
+		stmt.get(username, function(err, row) {
+			if (err) {
+				stmt.finalize();
+				callback(err, null);
+			} else {
+				stmt.finalize();
+
+				if (row) {
+					callback(null, bcrypt.compareSync(password, row.password));
+				} else {
+					callback(null, false);
+				}
+				
 			}
 		});
 	},
@@ -264,6 +295,28 @@ module.exports = {
 			} else {
 				stmt.finalize();
 				callback(null, row ? row.username : null);
+			}
+		});
+
+	},
+
+	getUserIDFromName: function(username, callback) {
+		if (!this.db) {
+			var self = this;
+			this.open(this.file, function() {
+				self.getUserIDFromName(id,callback);
+			});
+			return;
+		};
+
+		var stmt = this.db.prepare("SELECT userID FROM Users WHERE username = ?");
+		stmt.get(username, function(err, row) {
+			if (err) {
+				stmt.finalize();
+				callback(err, null);
+			} else {
+				stmt.finalize();
+				callback(null, row ? row.userID : null);
 			}
 		});
 

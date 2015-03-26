@@ -21,8 +21,11 @@
   "homepage": "https://github.com/yamikuronue/freezing-octo-cyril",
   "dependencies": {
     "async": "^0.9.0",
+    "bcrypt": "^0.8.1",
     "handlebars": "^3.0.0",
     "hapi": "^8.2.0",
+    "hapi-auth-basic": "^2.0.0",
+    "node-uuid": "^1.4.3",
     "sqlite3": "^3.0.5"
   },
   "devDependencies": {
@@ -31,7 +34,9 @@
     "grunt-mocha-test": "^0.12.7",
     "is-there": "^1.1.0",
     "mocha": "^2.2.1",
+    "node-uuid": "^1.4.3",
     "q": "^1.2.0",
+    "redis": "^0.12.1",
     "sinon": "^1.13.0"
   }
 }
