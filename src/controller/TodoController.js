@@ -90,9 +90,8 @@ module.exports = {
 		
 		dao.getListNameFromID(id, function(err, name) {
 			if (err) {
-					reply("ERROR: " + err);
-				} else {
-
+				reply("ERROR: " + err);
+			} else {
 				var info = {};
 				info.listName = name;
 				info.listID = id;

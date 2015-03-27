@@ -18,6 +18,9 @@ module.exports = {
 		port = port || 3000;
 		server.connection({ "port": port });
 
+		server.auth.scheme("cookie-based", AuthController.authScheme);
+		server.auth.strategy("default", "cookie-based", "required");
+
 
 		server.route({    // Other assets
 			method: "GET",
@@ -32,24 +35,45 @@ module.exports = {
 
 		/*Authentication */
 		server.state("session", {
-			ttl: null,
-			isSecure: false, //TODO: ought to be true
-			isHttpOnly: true,
-			encoding: "base64json",
-			clearInvalid: false, // remove invalid cookies
-			strictHeader: true // don't allow violations of RFC 6265
+			ttl: 24 * 60 * 60 * 1000,     // One day
+			path: "/",
+			encoding: "base64json"
 		});
 
 		server.route({
 			method: "GET",
 			path: "/auth/login",
+			config: {
+				auth:  false
+			},
 			handler: AuthController.loginForm
 		});
 
 		server.route({
 			method: "POST",
 			path: "/auth/login",
+			config: {
+				auth:  false
+			},
 			handler: AuthController.loginFormParse
+		});
+
+		server.route({
+			method: "GET",
+			path: "/auth/register",
+			config: {
+				auth:  false
+			},
+			handler: AuthController.register
+		});
+
+		server.route({
+			method: "POST",
+			path: "/auth/register",
+			config: {
+				auth:  false
+			},
+			handler: AuthController.registerParse
 		});
 
 		/*List actions*/
@@ -68,6 +92,12 @@ module.exports = {
 		server.route({
 			method: "GET",
 			path: "/list",
+			config: {
+				auth:  {
+					mode: "required",
+					strategy: "default"
+				}
+			},
 			handler: TodoController.fetchAllLists
 		});
 

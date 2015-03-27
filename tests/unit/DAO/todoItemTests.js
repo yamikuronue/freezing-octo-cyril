@@ -345,6 +345,26 @@ describe("todoItem DAO", function() {
 				});
 		});
 
+		it("should reject invalid users", function(done) {
+			async.series([
+				function(callback) {
+					dao.createDB(":memory:",callback);
+				},
+				function(callback) {
+					dao.getUsers(callback);
+				},
+				function(callback) {
+					dao.authenticateUser("Bambi", "Thumper", callback);
+				}
+				],
+				function(err, results) {
+					var authenticateSuccess = results[2];
+					assert.isFalse(authenticateSuccess, "Invalid user got in!");
+
+					done();
+				});
+		});
+
 		it("should be able to be renamed", function(done) {
 			async.series([
 				function(callback) {

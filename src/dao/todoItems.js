@@ -30,9 +30,12 @@ module.exports = {
 			this.createDB(filename, callback);
 		} else {
 			this.db = new sqlite3.Database(this.file, sqlite3.OPEN_READWRITE, function(err) {
+				if (err) errorprint(err);
 				callback(err);
 			});
 		}
+
+
 	},
 
 	createDB: function(filename, callback) {
@@ -231,7 +234,7 @@ module.exports = {
 		if (!this.db) {
 			var self = this;
 			this.open(this.file, function() {
-				self.createUser(username, callback);
+				self.createUser(username, password, callback);
 			});
 			return;
 		};
@@ -254,8 +257,9 @@ module.exports = {
 	authenticateUser: function(username, password, callback) {
 		if (!this.db) {
 			var self = this;
-			this.open(this.file, function() {
-				self.authenticateUser(username, callback);
+			this.open(this.file, function(err) {
+				if(err) callback(err);
+				else self.authenticateUser(username, password, callback);
 			});
 			return;
 		};

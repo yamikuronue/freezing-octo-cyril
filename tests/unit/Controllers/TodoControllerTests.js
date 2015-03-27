@@ -146,6 +146,9 @@ describe("Todo Controller", function() {
 		var stub = sandbox.stub(dao, "getItems");
 		stub.yields("Fake Error!", null);
 
+		var stubGetName = sandbox.stub(dao, "getListNameFromID");
+		stubGetName.yields(null, "List name");
+
 		var fakeReq = {
 			params: {
 				id: 69
