@@ -37,7 +37,10 @@ module.exports = {
 		server.state("session", {
 			ttl: 24 * 60 * 60 * 1000,     // One day
 			path: "/",
-			encoding: "base64json"
+			clearInvalid: false,
+			//encoding: "base64json"
+			encoding: "none",
+			strictHeader: false
 		});
 
 		server.route({
@@ -92,12 +95,6 @@ module.exports = {
 		server.route({
 			method: "GET",
 			path: "/list",
-			config: {
-				auth:  {
-					mode: "required",
-					strategy: "default"
-				}
-			},
 			handler: TodoController.fetchAllLists
 		});
 

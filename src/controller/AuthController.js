@@ -15,7 +15,7 @@ module.exports = {
 
 		validateAuthAttempt(username, password, function(err, isValid, cookie) {
 			if (isValid) {
-				reply.redirect("/").state("session", cookie);
+				reply.redirect("/").state("session", JSON.stringify(cookie));
 			} else {
 				reply.view("loginform", {msg: "Invalid credentials."});
 			}
@@ -60,12 +60,13 @@ module.exports = {
 			authenticate: function(request, reply) {
 				//reply is the standard hapi reply interface, it accepts err and result parameters in that order.
 				//The result parameter should be an object, though the object itself as well as all of its keys are optional if an err is provided.
-				var session = request.state.session;
-				if (!session) {
+				
+				if (!request.state.session) {
 					reply.redirect("/auth/login");
 					return;
 				}
 
+				var session = JSON.parse(request.state.session);
 				Session.verifySession(session.sessionID, session.userID, function(err, result) {
 					if (err) {
 						reply(err);
@@ -73,6 +74,7 @@ module.exports = {
 
 					if(!result) {
 						reply.redirect("/auth/login").state("session", "", {ttl: 0}); //remove cookie
+						return;
 					}
 
 					//When authentication is successful, you must call reply.continue(result) where result is an object with a credentials property.
