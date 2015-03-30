@@ -3,6 +3,7 @@ var sqlite3 = require("sqlite3").verbose();
 sqlite3.verbose();
 var IsThere = require("is-there");
 var bcrypt = require("bcrypt");
+var Q = require("Q");
 
 function errorprint(err){
 	if(err) console.error(arguments);
@@ -15,8 +16,11 @@ module.exports = {
 
 	close: function(callback) {
 		if (this.db) {
-			this.db.close(callback);
-			this.db = null;
+			this.db.close(function(err) {
+				this.db = null;
+				callback(err);
+			});
+			
 		} else {
 			callback();
 		}
@@ -34,8 +38,6 @@ module.exports = {
 				callback(err);
 			});
 		}
-
-
 	},
 
 	createDB: function(filename, callback) {
@@ -77,7 +79,7 @@ module.exports = {
 				state: !!row.state
 			});
 		}, function() {
-			callback(null, items);
+			callback(undefined, items);
 		});
 	},
 
@@ -125,18 +127,18 @@ module.exports = {
 		});
 	},
 
-	createList: function(listName, callback) {
+	createList: function(userID, listName, callback) {
 		if (!this.db) {
 			var self = this;
 			this.open(this.file, function() {
-				self.createList(listName, callback);
+				self.createList(userID, listName, callback);
 			});
 			return;
 		};
 
-		var stmt = this.db.prepare("INSERT INTO TodoLists (listName) VALUES (?)");
+		var stmt = this.db.prepare("INSERT INTO TodoLists (owner, listName) VALUES (:owner,:listname)");
 		var self = this;
-		stmt.run(listName, function(err) {
+		stmt.bind({":owner": userID, ":listname": listName}).run(function(err) {
 			if (err) {
 				stmt.finalize();
 				callback(err);
@@ -185,7 +187,7 @@ module.exports = {
 			});
 		}, function() {
 			//TODO: error handling
-			callback(null, items);
+			callback(undefined, items);
 		});
 	},
 	getListNameFromID: function(id, callback) {
@@ -204,7 +206,7 @@ module.exports = {
 				callback(err, null);
 			} else {
 				stmt.finalize();
-				callback(null, row ? row.listName : null);
+				callback(undefined, row ? row.listName : null);
 			}
 		});
 	},
@@ -226,7 +228,7 @@ module.exports = {
 			});
 		}, function() {
 			//TODO: error handling
-			callback(null, items);
+			callback(undefined, items);
 		});
 	},
 
@@ -246,7 +248,7 @@ module.exports = {
 		stmt.run(username, passHash, function(err) {
 			if (err) {
 				stmt.finalize();
-				callback(err);
+				if (callback) callback(err);
 			} else {
 				stmt.finalize();
 				self.db.get("SELECT last_insert_rowid() AS userID FROM Users", callback);
@@ -273,9 +275,9 @@ module.exports = {
 				stmt.finalize();
 
 				if (row) {
-					callback(null, bcrypt.compareSync(password, row.password));
+					callback(undefined, bcrypt.compareSync(password, row.password));
 				} else {
-					callback(null, false);
+					callback(undefined, false);
 				}
 				
 			}
@@ -298,7 +300,7 @@ module.exports = {
 				callback(err, null);
 			} else {
 				stmt.finalize();
-				callback(null, row ? row.username : null);
+				callback(undefined, row ? row.username : null);
 			}
 		});
 
@@ -320,7 +322,7 @@ module.exports = {
 				callback(err, null);
 			} else {
 				stmt.finalize();
-				callback(null, row ? row.userID : null);
+				callback(undefined, row ? row.userID : null);
 			}
 		});
 

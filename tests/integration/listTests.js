@@ -4,6 +4,9 @@ var http = require("http");
 var querystring = require("querystring");
 var server = require("../../src/server");
 var dao = require("../../src/dao/todoItems");
+var sessionDao = require("../../src/dao/session");
+var AuthController = require("../../src/controller/AuthController");
+
 var assert = require("chai").assert;
 var Q = require("q");
 
@@ -12,16 +15,23 @@ var sinon = require("sinon");
 var sandbox; 
 
 describe("The system", function() {
+	var cookie;
+
 	before(function(){
 		server.start(portToUse);
+
 	});
 
 	after(function() {
 		server.stop();
 	});
 
-	beforeEach(function() {
+	beforeEach(function(done) {
 		sandbox = sinon.sandbox.create();
+		sessionDao.generateSession(1, function(err, result) {
+			cookie = AuthController.createCookie(1,result);
+			done();
+		});
 	});
 	
 	afterEach(function() {
@@ -60,7 +70,8 @@ describe("The system", function() {
 			path: "/list/1",
 			method: "GET",
 			headers: {
-				"Accept": "text/html"
+				"Accept": "text/html",
+				"Cookie": cookie
 			}
 		};
 

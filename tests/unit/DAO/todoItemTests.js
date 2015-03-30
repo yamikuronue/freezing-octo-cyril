@@ -37,9 +37,9 @@ describe("todoItem DAO", function() {
 			dao.db = null;
 
 			dao.file = ":memory:";
-			dao.createList("implicitCreateTest",function(err, row) {
-				assert.isNull(err, "No error should occur.");
-				assert.isNotNull(row, "row was null");
+			dao.createList(1,"implicitCreateTest",function(err, row) {
+				assert.ok(err, "Error should occur.");
+				assert.equal(err.code, "SQLITE_CONSTRAINT", "Wrong error occurred");
 				dao.close(done);
 			});
 		});
@@ -96,25 +96,40 @@ describe("todoItem DAO", function() {
 	});
 
 	describe("A todo list", function() {
-		it("should be able to be created", function(done) {
+		var userID; 
+
+		beforeEach(function(done) {
 			async.series([
 				function(callback) {
 					dao.createDB(":memory:",callback);
 				},
 				function(callback) {
+					dao.createUser("test", "test", callback);
+				}
+			],
+			function(err, results) {
+				userID = results[1];
+				done();
+			});
+		});
+
+		it("should be able to be created", function(done) {
+			var userID; 
+			async.series([
+				function(callback) {
 					dao.getLists(callback);
 				},
 				function(callback) {
-					dao.createList("insertTest", callback);
+					dao.createList(userID, "insertTest", callback);
 				}, 
 				function(callback) {
 					dao.getLists(callback);
 				}
 				],
 				function(err, results) {
-					var listsBeforeInsert = results[1];
-					var createdRow = results[2];
-					var listsAfterInsert  = results[3];
+					var listsBeforeInsert = results[0];
+					var createdRow = results[1];
+					var listsAfterInsert  = results[2];
 
 					assert.isNotNull(listsBeforeInsert, "items was null");
 					assert.isTrue(listsBeforeInsert.length === 0, "Items already had lists when created");
@@ -131,19 +146,18 @@ describe("todoItem DAO", function() {
 		it("should be able to be renamed", function(done) {
 			async.series([
 				function(callback) {
-					dao.createDB(":memory:",callback);
-				},
-				function(callback) {
 					dao.getLists(callback);
 				},
 				function(callback) {
-					dao.createList("insertTest", callback);
+					dao.createList(userID,"insertTest", callback);
 				}
 				],
 				function(err, results) {
-					var listsBeforeInsert = results[1];
-					var createdRow = results[2];
+					var listsBeforeInsert = results[0];
+					var createdRow = results[1];
 					
+					assert.isUndefined(err, "Error should not occur");
+
 					async.series([
 						function(callback) {
 							dao.renameList(createdRow.listID, "renamedTest",callback);
@@ -167,6 +181,7 @@ describe("todoItem DAO", function() {
 		it("should report any errors during creation", function(done) {
 			var stmtStub = {
 				run: sandbox.stub(),
+				bind: function() {return stmtStub;},
 				finalize: function() {}
 			};
 			stmtStub.run.yields("Fake error!");
@@ -179,7 +194,7 @@ describe("todoItem DAO", function() {
 			
 			dao.db = mockDB;
 
-			dao.createList("This is a list",function(err) {
+			dao.createList(userID,"This is a list",function(err) {
 					assert.isTrue(stmtStub.run.called, "Statement was not called");
 					assert.equal(err, "Fake error!");
 					done();
@@ -191,32 +206,37 @@ describe("todoItem DAO", function() {
 	describe("A todo list item", function() {
 		it("should be able to be created", function(done) {
 			var listID;
-			async.series([
+
+
+			async.waterfall([
 				function(callback) {
 					dao.createDB(":memory:", callback);
-				},
-				function(callback) {
-					dao.createList("insertTest", function(err, row) {
-						listID = row.listID;
 
-						assert.isNotNull(listID);
-						callback(err);
-					});
 				},
 				function(callback) {
-					dao.getItems(listID, callback); 
+					dao.createUser("test", "test", callback);
+				},
+				function(userID, callback) {
+					assert.isNotNull(userID, "No user ID returned");
+					dao.createList(userID, "insertTest", callback);
+				},
+				function(row, callback) {
+						listID = row.listID;
+						assert.isNotNull(listID);
+						dao.getItems(listID, callback); 
 				}
 			], 
 			function (err, results) {
 				assert.isUndefined(err, "No error should occur.");
 
-				var items = results[2];
+				var items = results;
 				assert.isArray(items, "Items was not an array");
 				assert.isTrue(items.length < 1,"Items had 1 or more items.");
 
+
 				async.series([
 						function(callback) {
-							dao.addItem(listID, "Test", "test", 0,callback);
+							dao.addItem(listID, "Test", "test", 0, callback);
 						},
 						function(callback) {
 							dao.getItems(listID,callback);
@@ -228,11 +248,7 @@ describe("todoItem DAO", function() {
 						items = results[1];
 						assert.isArray(items, "Items was not an array");
 						assert.lengthOf(items, 1,"Items did not contain one item.");
-
-						dao.close(function(err) {
-							assert.isNull(err, "No error should occur.");
-							done();
-						});
+						done();
 					});
 			});
 		});
@@ -365,45 +381,10 @@ describe("todoItem DAO", function() {
 				});
 		});
 
-		it("should be able to be renamed", function(done) {
-			async.series([
-				function(callback) {
-					dao.createDB(":memory:",callback);
-				},
-				function(callback) {
-					dao.getLists(callback);
-				},
-				function(callback) {
-					dao.createList("insertTest", callback);
-				}
-				],
-				function(err, results) {
-					var listsBeforeInsert = results[1];
-					var createdRow = results[2];
-					
-					async.series([
-						function(callback) {
-							dao.renameList(createdRow.listID, "renamedTest",callback);
-						},
-						function(callback) {
-							dao.getLists(callback);
-						}
-					],
-					function(err, results) {
-						var listsAfterRename  = results[1];
-
-						assert.isNotNull(listsAfterRename, "items was null");
-						assert.isTrue(listsAfterRename.length === 1, "Items did not contain one list");
-						assert.isTrue(listsAfterRename[0].name === "renamedTest", "List was not renamed");
-						done();
-					});
-
-				});
-		});
-
 		it("should report any errors during creation", function(done) {
 			var stmtStub = {
 				run: sandbox.stub(),
+				bind: function() {},
 				finalize: function() {}
 			};
 			stmtStub.run.yields("Fake error!");

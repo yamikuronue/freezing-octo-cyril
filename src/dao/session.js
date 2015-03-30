@@ -15,7 +15,7 @@ module.exports = {
 
 	verifySession: function(token, userID, callback) {
 		client.get(token, function(err, reply) {
-			callback(err, +reply === userID);
+			callback(err, +reply === +userID);
 		});
 	},
 

@@ -23,6 +23,7 @@ describe("The session store", function() {
 
 	it("Should be able to retrieve a session it generated", function(done) {
 		dao.generateSession("1234", function(err, sessID) {
+			assert.isNull(err, "Error should not occur");
 			assert.ok(sessID, "Session id not generated");
 
 			dao.verifySession(sessID, "1234", function(err, pass) {
@@ -34,6 +35,7 @@ describe("The session store", function() {
 
 	it("Should reject incorrect userID for a given token", function(done) {
 		dao.generateSession("1234", function(err, sessID) {
+			assert.isNull(err, "Error should not occur");
 			assert.ok(sessID, "Session id not generated");
 
 			dao.verifySession(sessID, "4321", function(err, pass) {

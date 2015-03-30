@@ -84,6 +84,9 @@ module.exports = {
 				});
 			}
 		};
+	},
+	createCookie: function(userID, sessionID) {
+		return {"userID": userID, "sessionID": sessionID};
 	}
 
 };
@@ -103,7 +106,7 @@ function validateAuthAttempt(username, password, hapiCallback) {
 					Session.generateSession(userID, callback);
 				},
 				function(sessID, callback) {
-					hapiCallback(err, isValid, {"userID": uID, "sessionID": sessID});
+					hapiCallback(err, isValid, module.exports.createCookie(uID, sessID));
 				}
 			]);
 		};
