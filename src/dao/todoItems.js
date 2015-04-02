@@ -190,6 +190,28 @@ module.exports = {
 			callback(undefined, items);
 		});
 	},
+
+	getListsForUser: function(userID, callback) {
+		if (!this.db) {
+			var self = this;
+			this.open(this.file, function() {
+				self.getListsForUser(userID, callback);
+			});
+			return;
+		};
+
+		var items = [];
+		var stmt = this.db.prepare("SELECT listID, listName FROM TodoLists WHERE owner = ?");
+		stmt.each(userID, function(err, row){
+			items.push({
+				id: row.listID,
+				name: row.listName
+			});
+		}, function() {
+			//TODO: error handling
+			callback(undefined, items);
+		});
+	},
 	getListNameFromID: function(id, callback) {
 		if (!this.db) {
 			var self = this;
@@ -282,6 +304,35 @@ module.exports = {
 				
 			}
 		});
+	},
+
+	userCanSeeList: function(userID, listID, callback) {
+		if (!this.db) {
+			var self = this;
+			this.open(this.file, function(err) {
+				if(err) callback(err);
+				else self.userCanSeeList(userID, listID, callback);
+			});
+			return;
+		};
+
+		var stmt = this.db.prepare("SELECT owner FROM TodoLists WHERE listID = ?");
+		stmt.get(listID, function(err, row) {
+			if (err) {
+				stmt.finalize();
+				callback(err, null);
+			} else {
+				stmt.finalize();
+
+				if (row) {
+					callback(undefined, row.owner === userID);
+				} else {
+					callback(undefined, false);
+				}
+				
+			}
+		});
+
 	},
 
 	getUserNameFromID: function(id, callback) {

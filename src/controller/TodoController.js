@@ -1,11 +1,14 @@
 var dao = require("../dao/todoItems");
 var accepts = require("accepts");
+var async = require ("async");
 
 
 module.exports = {
 	createList: function(req, reply) {
 		var name = req.payload.name;
-		dao.createList(name, function(err, row) {
+		var userID = req.auth.credentials;
+
+		dao.createList(userID, name, function(err, row) {
 			switch(getResponseType(req)) {
 				case "json":
 					if (err) {
@@ -57,8 +60,9 @@ module.exports = {
 
 	fetchAllLists: function(req, reply) {
 		var info = {};
+		var userID = req.auth.credentials;
 
-		dao.getLists(function(err, items){
+		dao.getListsForUser(userID,function(err, items){
 			if (err) {
 				reply("ERROR: " + err);
 			} else {
@@ -87,17 +91,31 @@ module.exports = {
 
 	fetchList: function(req, reply) {
 		var id = req.params.id;
-		
-		dao.getListNameFromID(id, function(err, name) {
-			if (err) {
-				reply("ERROR: " + err);
-			} else {
-				var info = {};
-				info.listName = name;
-				info.listID = id;
+		var userID = req.auth.credentials;
 
-				dao.getItems(id, function(err, items) {
-					info.items = items;
+		var info = {};
+
+		async.waterfall([
+				function(callback) {
+					dao.userCanSeeList(userID, id, callback);
+				},
+				function(permission, callback) {
+					if (!permission) {
+						reply.view("error", {message: "No such list"});
+						return;
+					}
+
+					dao.getListNameFromID(id,callback);
+				},
+				function(name, callback) {
+					info.listName = name;
+					info.listID = id;
+
+					dao.getItems(id, callback);
+				}
+			],
+			function (err, result) {
+				info.items = result;
 
 					switch(getResponseType(req)) {
 						case "json":
@@ -116,10 +134,9 @@ module.exports = {
 								reply.view("listitems", info);
 							}
 						break;
-					}					
-				});
-			}			
-		});		
+					}
+			}
+		);	
 	},
 
 	addItem: function(req, reply) {
