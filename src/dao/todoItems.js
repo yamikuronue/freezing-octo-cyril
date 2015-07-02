@@ -3,7 +3,7 @@ var sqlite3 = require("sqlite3").verbose();
 sqlite3.verbose();
 var IsThere = require("is-there");
 var bcrypt = require("bcrypt");
-var Q = require("Q");
+var Q = require("q");
 
 function errorprint(err){
 	if(err) console.error(arguments);
