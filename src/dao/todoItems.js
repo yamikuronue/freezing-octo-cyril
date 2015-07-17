@@ -1,6 +1,10 @@
 var fs = require("fs");
 var sqlite3 = require("sqlite3").verbose();
 sqlite3.verbose();
+var IsThere = require("is-there");
+var bcrypt = require("bcrypt");
+var Q = require("q");
+
 function errorprint(err){
 	if(err) console.error(arguments);
 };
@@ -11,21 +15,44 @@ module.exports = {
 	db: null,
 
 	close: function(callback) {
-		this.db.close(callback);
-		this.db = null;
+		if (this.db) {
+			this.db.close(function(err) {
+				this.db = null;
+				callback(err);
+			});
+			
+		} else {
+			callback();
+		}
+	},
+
+	open: function(filename, callback) {
+		this.file = filename;
+
+		var exists = IsThere.sync(this.file);
+		if (this.file === ":memory:" || !exists) {
+			this.createDB(filename, callback);
+		} else {
+			this.db = new sqlite3.Database(this.file, sqlite3.OPEN_READWRITE, function(err) {
+				if (err) errorprint(err);
+				callback(err);
+			});
+		}
 	},
 
 	createDB: function(filename, callback) {
 		this.file = filename;
-		this.db = new sqlite3.Database(this.file, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, function(err) {
+		this.db = new sqlite3.Database(this.file, sqlite3.OPEN_READWRITE || sqlite3.OPEN_CREATE, function(err) {
 			if (err) callback(err);
 		});
 
 		this.db.serialize();
 			this.db.run("DROP TABLE IF EXISTS TodoItems",errorprint);
 			this.db.run("DROP TABLE IF EXISTS TodoLists",errorprint);
+			this.db.run("DROP TABLE IF EXISTS Users",errorprint);
 
-			this.db.run("CREATE TABLE TodoLists (listID INTEGER PRIMARY KEY, listName TEXT)",errorprint);
+			this.db.run("CREATE TABLE Users (userID INTEGER PRIMARY KEY, username TEXT, password TEXT)",errorprint);
+			this.db.run("CREATE TABLE TodoLists (listID INTEGER PRIMARY KEY, listName TEXT, owner INTEGER, FOREIGN KEY(owner) REFERENCES Users(userID))",errorprint);
 			this.db.run("CREATE TABLE TodoItems (itemID INTEGER PRIMARY KEY, listID INTEGER NOT NULL, itemName TEXT, itemText TEXT, state INTEGER, FOREIGN KEY(listID) REFERENCES TodoLists(listID))",errorprint);
 
 			this.db.run("PRAGMA foreign_keys = ON", errorprint);
@@ -36,7 +63,7 @@ module.exports = {
 	getItems: function(listID, callback) {
 		if (!this.db) {
 			var self = this;
-			this.createDB(this.file, function() {
+			this.open(this.file, function() {
 				self.getItems(listID, callback);
 			});
 			return;
@@ -52,14 +79,14 @@ module.exports = {
 				state: !!row.state
 			});
 		}, function() {
-			callback(null, items);
+			callback(undefined, items);
 		});
 	},
 
 	addItem: function(listID, name, text, state, callback) {
 		if (!this.db) {
 			var self = this;
-			this.createDB(this.file, function() {
+			this.open(this.file, function() {
 				self.addItem(listID, name, text, state, callback);
 			});
 			return;
@@ -81,7 +108,7 @@ module.exports = {
 	completeItem: function(itemID, callback) {
 		if (!this.db) {
 			var self = this;
-			this.createDB(this.file, function() {
+			this.open(this.file, function() {
 				self.completeItem(itemID, callback);
 			});
 			return;
@@ -100,18 +127,18 @@ module.exports = {
 		});
 	},
 
-	createList: function(listName, callback) {
+	createList: function(userID, listName, callback) {
 		if (!this.db) {
 			var self = this;
-			this.createDB(this.file, function() {
-				self.createList(listName, callback);
+			this.open(this.file, function() {
+				self.createList(userID, listName, callback);
 			});
 			return;
 		};
 
-		var stmt = this.db.prepare("INSERT INTO TodoLists (listName) VALUES (?)");
+		var stmt = this.db.prepare("INSERT INTO TodoLists (owner, listName) VALUES (:owner,:listname)");
 		var self = this;
-		stmt.run(listName, function(err) {
+		stmt.bind({":owner": userID, ":listname": listName}).run(function(err) {
 			if (err) {
 				stmt.finalize();
 				callback(err);
@@ -125,7 +152,7 @@ module.exports = {
 	renameList: function(listId, newName, callback) {
 		if (!this.db) {
 			var self = this;
-			this.createDB(this.file, function() {
+			this.open(this.file, function() {
 				self.renameList(listId, newName, callback);
 			});
 			return;
@@ -146,7 +173,7 @@ module.exports = {
 	getLists: function(callback) {
 		if (!this.db) {
 			var self = this;
-			this.createDB(this.file, function() {
+			this.open(this.file, function() {
 				self.getLists(callback);
 			});
 			return;
@@ -160,13 +187,35 @@ module.exports = {
 			});
 		}, function() {
 			//TODO: error handling
-			callback(null, items);
+			callback(undefined, items);
+		});
+	},
+
+	getListsForUser: function(userID, callback) {
+		if (!this.db) {
+			var self = this;
+			this.open(this.file, function() {
+				self.getListsForUser(userID, callback);
+			});
+			return;
+		};
+
+		var items = [];
+		var stmt = this.db.prepare("SELECT listID, listName FROM TodoLists WHERE owner = ?");
+		stmt.each(userID, function(err, row){
+			items.push({
+				id: row.listID,
+				name: row.listName
+			});
+		}, function() {
+			//TODO: error handling
+			callback(undefined, items);
 		});
 	},
 	getListNameFromID: function(id, callback) {
 		if (!this.db) {
 			var self = this;
-			this.createDB(this.file, function() {
+			this.open(this.file, function() {
 				self.getListNameFromID(id,callback);
 			});
 			return;
@@ -179,7 +228,152 @@ module.exports = {
 				callback(err, null);
 			} else {
 				stmt.finalize();
-				callback(null, row ? row.listName : null);
+				callback(undefined, row ? row.listName : null);
+			}
+		});
+	},
+
+	getUsers: function(callback) {
+		if (!this.db) {
+			var self = this;
+			this.open(this.file, function() {
+				self.getUsers(callback);
+			});
+			return;
+		};
+
+		var items = [];
+		this.db.each("SELECT userID, username FROM Users", function(err, row){
+			items.push({
+				id: row.userID,
+				name: row.username
+			});
+		}, function() {
+			//TODO: error handling
+			callback(undefined, items);
+		});
+	},
+
+	createUser: function(username, password, callback) {
+		if (!this.db) {
+			var self = this;
+			this.open(this.file, function() {
+				self.createUser(username, password, callback);
+			});
+			return;
+		};
+
+		var passHash = bcrypt.hashSync(password, 10);
+		var stmt = this.db.prepare("INSERT INTO Users (username, password) VALUES (?,?)");
+
+		var self = this;
+		stmt.run(username, passHash, function(err) {
+			if (err) {
+				stmt.finalize();
+				if (callback) callback(err);
+			} else {
+				stmt.finalize();
+				self.db.get("SELECT last_insert_rowid() AS userID FROM Users", callback);
+			}
+		});
+	},
+
+	authenticateUser: function(username, password, callback) {
+		if (!this.db) {
+			var self = this;
+			this.open(this.file, function(err) {
+				if(err) callback(err);
+				else self.authenticateUser(username, password, callback);
+			});
+			return;
+		};
+
+		var stmt = this.db.prepare("SELECT password FROM Users WHERE username = ?");
+		stmt.get(username, function(err, row) {
+			if (err) {
+				stmt.finalize();
+				callback(err, null);
+			} else {
+				stmt.finalize();
+
+				if (row) {
+					callback(undefined, bcrypt.compareSync(password, row.password));
+				} else {
+					callback(undefined, false);
+				}
+				
+			}
+		});
+	},
+
+	userCanSeeList: function(userID, listID, callback) {
+		if (!this.db) {
+			var self = this;
+			this.open(this.file, function(err) {
+				if(err) callback(err);
+				else self.userCanSeeList(userID, listID, callback);
+			});
+			return;
+		};
+
+		var stmt = this.db.prepare("SELECT owner FROM TodoLists WHERE listID = ?");
+		stmt.get(listID, function(err, row) {
+			if (err) {
+				stmt.finalize();
+				callback(err, null);
+			} else {
+				stmt.finalize();
+
+				if (row) {
+					callback(undefined, row.owner === userID);
+				} else {
+					callback(undefined, false);
+				}
+				
+			}
+		});
+
+	},
+
+	getUserNameFromID: function(id, callback) {
+		if (!this.db) {
+			var self = this;
+			this.open(this.file, function() {
+				self.getUserNameFromID(id,callback);
+			});
+			return;
+		};
+
+		var stmt = this.db.prepare("SELECT username FROM Users WHERE userID = ?");
+		stmt.get(id, function(err, row) {
+			if (err) {
+				stmt.finalize();
+				callback(err, null);
+			} else {
+				stmt.finalize();
+				callback(undefined, row ? row.username : null);
+			}
+		});
+
+	},
+
+	getUserIDFromName: function(username, callback) {
+		if (!this.db) {
+			var self = this;
+			this.open(this.file, function() {
+				self.getUserIDFromName(id,callback);
+			});
+			return;
+		};
+
+		var stmt = this.db.prepare("SELECT userID FROM Users WHERE username = ?");
+		stmt.get(username, function(err, row) {
+			if (err) {
+				stmt.finalize();
+				callback(err, null);
+			} else {
+				stmt.finalize();
+				callback(undefined, row ? row.userID : null);
 			}
 		});
 

@@ -5,12 +5,25 @@
 VAGRANTFILE_API_VERSION = "2"
 
   $provisionScript = <<SCRIPT
+    #Dependencies for bcrypt are a little insane....
+    sudo apt-get install -y python
+    sudo apt-get install -y make
+    sudo apt-get install -y g++
+
     #Node & NPM
     sudo apt-get install -y curl
     curl -sL https://deb.nodesource.com/setup | sudo bash -  #We have to install from a newer location, the repo version is too old
     sudo apt-get install -y nodejs
-	cd /vagrant
-    sudo npm install --no-bin-links
+    cd /vagrant
+    npm install
+
+    #Redis
+    cd
+    wget http://download.redis.io/releases/redis-2.8.19.tar.gz
+    tar xzf redis-2.8.19.tar.gz
+    cd redis-2.8.19
+    make
+    src/redis-server &
 SCRIPT
 
 

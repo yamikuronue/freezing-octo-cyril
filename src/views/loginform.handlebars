@@ -1,0 +1,12 @@
+<h1>Log in</h1>
+{{#if msg}}
+<div id="message" class="alert alert-error">
+    <a href="#" class="close" data-dismiss="alert">&times;</a>
+    {{msg}}
+</div>
+{{/if}}
+<form method="post" action="/auth/login">
+Username: <input type="text" name="username" /><br>
+Password: <input type="password" name="password" /><br>
+<input type="submit" />
+</form>

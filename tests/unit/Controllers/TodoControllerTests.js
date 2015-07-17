@@ -26,6 +26,13 @@ describe("Todo Controller", function() {
 			var fakeReq = {
 				payload: {
 					name: "Fake list"
+				},
+				raw: {
+					req: {
+						headers: {
+							accept: "application/json"
+						}
+					}
 				}
 			};
 
@@ -37,7 +44,7 @@ describe("Todo Controller", function() {
 			/*Verification*/
 			assert(stub.called, "DAO was not called");
 			assert.equal("Fake list", stub.args[0][0], "Name not passed correctly.");
-			assert(fakeReply.calledWith("List created! ID: 42"), "Reply was not sent");
+			assert(fakeReply.calledWith({message: "List created!", listID: 42}), "Reply was not sent");
 	});
 
 	it("should report errors when creating lists" , function(done) {
@@ -48,6 +55,13 @@ describe("Todo Controller", function() {
 		var fakeReq = {
 			payload: {
 				name: "Fake list"
+			},
+			raw: {
+				req: {
+					headers: {
+						accept: "application/json"
+					}
+				}
 			}
 		};
 
@@ -55,7 +69,7 @@ describe("Todo Controller", function() {
 			/*Verification*/
 			assert(stub.called, "DAO was not called");
 			assert.equal("Fake list", stub.args[0][0], "Name not passed correctly.");
-			assert.equal("ERROR: Fake Error!", reply, "Reply not sent correctly.");
+			assert.equal("Fake Error!", reply, "Reply not sent correctly.");
 			done();
 		};
 
@@ -132,6 +146,9 @@ describe("Todo Controller", function() {
 		var stub = sandbox.stub(dao, "getItems");
 		stub.yields("Fake Error!", null);
 
+		var stubGetName = sandbox.stub(dao, "getListNameFromID");
+		stubGetName.yields(null, "List name");
+
 		var fakeReq = {
 			params: {
 				id: 69
@@ -139,7 +156,7 @@ describe("Todo Controller", function() {
 			raw: {
 				req: {
 					headers: {
-						accept: "html"
+						accept: "application/json"
 					}
 				}
 			}
@@ -149,7 +166,7 @@ describe("Todo Controller", function() {
 			/*Verification*/
 			assert(stub.called, "DAO was not called");
 			assert.equal(69, stub.args[0][0], "Name not passed correctly.");
-			assert.equal("ERROR: Fake Error!", reply, "Reply not sent correctly.");
+			assert.equal("Fake Error!", reply, "Reply not sent correctly.");
 			done();
 		};
 
@@ -172,6 +189,13 @@ describe("Todo Controller", function() {
 				name: "Item 1",
 				text: "The first item",
 				state: 0
+			},
+			raw: {
+				req: {
+					headers: {
+						accept: "application/json"
+					}
+				}
 			}
 		};
 
@@ -179,7 +203,7 @@ describe("Todo Controller", function() {
 			/*Verification*/
 			assert(stub.called, "DAO was not called");
 			assert.isTrue(stub.calledWith(75, "Item 1", "The first item", 0), "Information not passed correctly to DAO.");
-			assert.equal("Item created!", reply, "Reply was not sent correctly");
+			assert.deepEqual({message: "Item created!"}, reply, "Reply was not sent correctly");
 			done();
 		};
 
@@ -200,6 +224,13 @@ describe("Todo Controller", function() {
 				name: "Item 1",
 				text: "The first item",
 				state: 0
+			},
+			raw: {
+				req: {
+					headers: {
+						accept: "application/json"
+					}
+				}
 			}
 		};
 
@@ -207,7 +238,7 @@ describe("Todo Controller", function() {
 			/*Verification*/
 			assert(stub.called, "DAO was not called");
 			assert.isTrue(stub.calledWith(75, "Item 1", "The first item", 0), "Information not passed correctly to DAO.");
-			assert.equal("ERROR: Fake Error!", reply, "Reply not sent correctly.");
+			assert.equal("Fake Error!", reply, "Reply not sent correctly.");
 		};
 
 		/*Call OOT*/

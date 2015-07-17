@@ -8,8 +8,6 @@ var dao = require("../../../src/dao/todoItems");
 
 var assert = require("chai").assert;
 
-
-
 describe("todoItem DAO", function() {
 	beforeEach(function() {
 		sandbox = sinon.sandbox.create();
@@ -21,27 +19,11 @@ describe("todoItem DAO", function() {
 	});
 
 	describe("The database", function() {
-		it("should be created explicitly on demand", function() {
-			exists = IsThere.sync("/home/vagrant/unitTest.db");
-			if (exists) {
-				fs.unlinkSync("/home/vagrant/unitTest.db");
-				exists = IsThere.sync("/home/vagrant/unitTest.db");
-			}
-			
-			assert.isFalse(exists);
-
-			dao.createDB("/home/vagrant/unitTest.db", function() {
-				exists = IsThere.sync("unitTest.db");
-				assert.isTrue(exists);
-			});
-
-			dao.close(function() {
-				fs.unlinkSync("/home/vagrant/unitTest.db");
-			});
-		});
 
 		it("should be created implicitly when lists are fetched", function(done) {
 			//No explicit DB create
+			dao.db = null;
+
 			dao.file = ":memory:";
 			dao.getLists(function(err, items) {
 				assert.isNotNull(items, "items was null");
@@ -52,16 +34,20 @@ describe("todoItem DAO", function() {
 
 		it("should be created implicitly when lists are created", function(done) {
 			//No explicit DB create
+			dao.db = null;
+
 			dao.file = ":memory:";
-			dao.createList("implicitCreateTest",function(err, row) {
-				assert.isNull(err, "No error should occur.");
-				assert.isNotNull(row, "row was null");
+			dao.createList(1,"implicitCreateTest",function(err, row) {
+				assert.ok(err, "Error should occur.");
+				assert.equal(err.code, "SQLITE_CONSTRAINT", "Wrong error occurred");
 				dao.close(done);
 			});
 		});
 
 		it("should be created implicitly when items are fetched", function(done) {
 			//No explicit DB create
+			dao.db = null;
+
 			dao.file = ":memory:";
 			dao.getItems(1, function(err, items) {
 				assert.isNotNull(items, "items was null");
@@ -72,6 +58,8 @@ describe("todoItem DAO", function() {
 
 		it("should be created implicitly when items are created", function(done) {
 			//No explicit DB create
+			dao.db = null;
+
 			dao.file = ":memory:";
 			dao.addItem(12, "Test", "test", 0, function(err) {
 					assert.isDefined(err, "Error should occur.");
@@ -108,25 +96,40 @@ describe("todoItem DAO", function() {
 	});
 
 	describe("A todo list", function() {
-		it("should be able to be created", function(done) {
+		var userID; 
+
+		beforeEach(function(done) {
 			async.series([
 				function(callback) {
 					dao.createDB(":memory:",callback);
 				},
 				function(callback) {
+					dao.createUser("test", "test", callback);
+				}
+			],
+			function(err, results) {
+				userID = results[1];
+				done();
+			});
+		});
+
+		it("should be able to be created", function(done) {
+			var userID; 
+			async.series([
+				function(callback) {
 					dao.getLists(callback);
 				},
 				function(callback) {
-					dao.createList("insertTest", callback);
+					dao.createList(userID, "insertTest", callback);
 				}, 
 				function(callback) {
 					dao.getLists(callback);
 				}
 				],
 				function(err, results) {
-					var listsBeforeInsert = results[1];
-					var createdRow = results[2];
-					var listsAfterInsert  = results[3];
+					var listsBeforeInsert = results[0];
+					var createdRow = results[1];
+					var listsAfterInsert  = results[2];
 
 					assert.isNotNull(listsBeforeInsert, "items was null");
 					assert.isTrue(listsBeforeInsert.length === 0, "Items already had lists when created");
@@ -143,19 +146,18 @@ describe("todoItem DAO", function() {
 		it("should be able to be renamed", function(done) {
 			async.series([
 				function(callback) {
-					dao.createDB(":memory:",callback);
-				},
-				function(callback) {
 					dao.getLists(callback);
 				},
 				function(callback) {
-					dao.createList("insertTest", callback);
+					dao.createList(userID,"insertTest", callback);
 				}
 				],
 				function(err, results) {
-					var listsBeforeInsert = results[1];
-					var createdRow = results[2];
+					var listsBeforeInsert = results[0];
+					var createdRow = results[1];
 					
+					assert.isUndefined(err, "Error should not occur");
+
 					async.series([
 						function(callback) {
 							dao.renameList(createdRow.listID, "renamedTest",callback);
@@ -179,6 +181,7 @@ describe("todoItem DAO", function() {
 		it("should report any errors during creation", function(done) {
 			var stmtStub = {
 				run: sandbox.stub(),
+				bind: function() {return stmtStub;},
 				finalize: function() {}
 			};
 			stmtStub.run.yields("Fake error!");
@@ -191,7 +194,7 @@ describe("todoItem DAO", function() {
 			
 			dao.db = mockDB;
 
-			dao.createList("This is a list",function(err) {
+			dao.createList(userID,"This is a list",function(err) {
 					assert.isTrue(stmtStub.run.called, "Statement was not called");
 					assert.equal(err, "Fake error!");
 					done();
@@ -203,32 +206,37 @@ describe("todoItem DAO", function() {
 	describe("A todo list item", function() {
 		it("should be able to be created", function(done) {
 			var listID;
-			async.series([
+
+
+			async.waterfall([
 				function(callback) {
 					dao.createDB(":memory:", callback);
-				},
-				function(callback) {
-					dao.createList("insertTest", function(err, row) {
-						listID = row.listID;
 
-						assert.isNotNull(listID);
-						callback(err);
-					});
 				},
 				function(callback) {
-					dao.getItems(listID, callback); 
+					dao.createUser("test", "test", callback);
+				},
+				function(userID, callback) {
+					assert.isNotNull(userID, "No user ID returned");
+					dao.createList(userID, "insertTest", callback);
+				},
+				function(row, callback) {
+						listID = row.listID;
+						assert.isNotNull(listID);
+						dao.getItems(listID, callback); 
 				}
 			], 
 			function (err, results) {
 				assert.isUndefined(err, "No error should occur.");
 
-				var items = results[2];
+				var items = results;
 				assert.isArray(items, "Items was not an array");
 				assert.isTrue(items.length < 1,"Items had 1 or more items.");
 
+
 				async.series([
 						function(callback) {
-							dao.addItem(listID, "Test", "test", 0,callback);
+							dao.addItem(listID, "Test", "test", 0, callback);
 						},
 						function(callback) {
 							dao.getItems(listID,callback);
@@ -240,11 +248,7 @@ describe("todoItem DAO", function() {
 						items = results[1];
 						assert.isArray(items, "Items was not an array");
 						assert.lengthOf(items, 1,"Items did not contain one item.");
-
-						dao.close(function(err) {
-							assert.isNull(err, "No error should occur.");
-							done();
-						});
+						done();
 					});
 			});
 		});
@@ -263,6 +267,142 @@ describe("todoItem DAO", function() {
 				assert.equal(err.code, "SQLITE_CONSTRAINT", "Wrong error occurred");
 			done();
 			});
+		});
+	});
+
+	describe("A user", function() {
+		it("should be able to be created", function(done) {
+			async.series([
+				function(callback) {
+					dao.createDB(":memory:",callback);
+				},
+				function(callback) {
+					dao.getUsers(callback);
+				},
+				function(callback) {
+					dao.createUser("Bambi", "Shark", callback);
+				}, 
+				function(callback) {
+					dao.getUsers(callback);
+				}
+				],
+				function(err, results) {
+					var usersBeforeInsert = results[1];
+					var createdUser = results[2];
+					var usersAfterInsert  = results[3];
+
+					assert.isNotNull(usersBeforeInsert, "items was null");
+					assert.isTrue(usersBeforeInsert.length === 0, "Items already had lists when created");
+
+					assert.isNotNull(createdUser.userID, "User did not create successfully.");
+
+					assert.isNotNull(usersAfterInsert, "items was null");
+					assert.isTrue(usersAfterInsert.length === 1, "Items did not contain one list");
+
+					done();
+				});
+		});
+
+		it("should be able to be authenticated", function(done) {
+			async.series([
+				function(callback) {
+					dao.createDB(":memory:",callback);
+				},
+				function(callback) {
+					dao.getUsers(callback);
+				},
+				function(callback) {
+					dao.createUser("Bambi", "Shark", callback);
+				}, 
+				function(callback) {
+					dao.getUsers(callback);
+				},
+				function(callback) {
+					dao.authenticateUser("Bambi", "Shark", callback);
+				}
+				],
+				function(err, results) {
+					var authenticateSuccess = results[4];
+					assert.isTrue(authenticateSuccess, "User did not auth successfully");
+
+					done();
+				});
+		});
+
+		it("should reject invalid passwords", function(done) {
+			async.series([
+				function(callback) {
+					dao.createDB(":memory:",callback);
+				},
+				function(callback) {
+					dao.getUsers(callback);
+				},
+				function(callback) {
+					dao.createUser("Bambi", "Shark", callback);
+				}, 
+				function(callback) {
+					dao.getUsers(callback);
+				},
+				function(callback) {
+					dao.authenticateUser("Bambi", "Thumper", callback);
+				},
+				function(callback) {
+					dao.authenticateUser("Bambi", "", callback);
+				}
+				],
+				function(err, results) {
+					var authenticateSuccess = results[4];
+					assert.isFalse(authenticateSuccess, "User got in with an invalid password!");
+
+					authenticateSuccess = results[5];
+					assert.isFalse(authenticateSuccess, "User got in with no password!");
+
+					done();
+				});
+		});
+
+		it("should reject invalid users", function(done) {
+			async.series([
+				function(callback) {
+					dao.createDB(":memory:",callback);
+				},
+				function(callback) {
+					dao.getUsers(callback);
+				},
+				function(callback) {
+					dao.authenticateUser("Bambi", "Thumper", callback);
+				}
+				],
+				function(err, results) {
+					var authenticateSuccess = results[2];
+					assert.isFalse(authenticateSuccess, "Invalid user got in!");
+
+					done();
+				});
+		});
+
+		it("should report any errors during creation", function(done) {
+			var stmtStub = {
+				run: sandbox.stub(),
+				bind: function() {},
+				finalize: function() {}
+			};
+			stmtStub.run.yields("Fake error!");
+
+			var mockDB = {
+				prepare: function() {
+					return stmtStub;
+				}
+			};
+			
+			dao.db = mockDB;
+
+			dao.createUser("Thumper", "moo", function(err) {
+					assert.isTrue(stmtStub.run.called, "Statement was not called");
+					assert.equal(err, "Fake error!");
+					done();
+				}
+			);
 		});
 	});
 });
