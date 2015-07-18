@@ -92,11 +92,11 @@ module.exports = {
 	fetchList: function(req, reply) {
 		var id = req.params.id;
 		var userID = req.auth.credentials;
-
 		var info = {};
 
 		async.waterfall([
 				function(callback) {
+					
 					dao.userCanSeeList(userID, id, callback);
 				},
 				function(permission, callback) {

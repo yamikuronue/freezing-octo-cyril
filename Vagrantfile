@@ -14,11 +14,15 @@ VAGRANTFILE_API_VERSION = "2"
     sudo apt-get install -y curl
     curl -sL https://deb.nodesource.com/setup | sudo bash -  #We have to install from a newer location, the repo version is too old
     sudo apt-get install -y nodejs
-    cd /vagrant
+	sudo apt-get install make
+	sudo apt-get install g++
+    cp -r /vagrant /home/vagrant/todo
+	cd /home/vagrant/todo
     npm install
+	npm install -g grunt-cli
 
     #Redis
-    cd
+	cd
     wget http://download.redis.io/releases/redis-2.8.19.tar.gz
     tar xzf redis-2.8.19.tar.gz
     cd redis-2.8.19

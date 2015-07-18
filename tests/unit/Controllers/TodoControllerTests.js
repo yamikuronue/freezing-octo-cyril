@@ -27,6 +27,9 @@ describe("Todo Controller", function() {
 				payload: {
 					name: "Fake list"
 				},
+				auth: {
+					credentials: "fakeuser"
+				},
 				raw: {
 					req: {
 						headers: {
@@ -43,7 +46,8 @@ describe("Todo Controller", function() {
 
 			/*Verification*/
 			assert(stub.called, "DAO was not called");
-			assert.equal("Fake list", stub.args[0][0], "Name not passed correctly.");
+			assert.equal("fakeuser", stub.args[0][0], "UserID not passed correctly.");
+			assert.equal("Fake list", stub.args[0][1], "Name not passed correctly.");
 			assert(fakeReply.calledWith({message: "List created!", listID: 42}), "Reply was not sent");
 	});
 
@@ -56,6 +60,9 @@ describe("Todo Controller", function() {
 			payload: {
 				name: "Fake list"
 			},
+			auth: {
+					credentials: "fakeuser"
+				},
 			raw: {
 				req: {
 					headers: {
@@ -68,7 +75,8 @@ describe("Todo Controller", function() {
 		var fakeReply = function(reply) {
 			/*Verification*/
 			assert(stub.called, "DAO was not called");
-			assert.equal("Fake list", stub.args[0][0], "Name not passed correctly.");
+			assert.equal("fakeuser", stub.args[0][0], "UserID not passed correctly.");
+			assert.equal("Fake list", stub.args[0][1], "Name not passed correctly.");
 			assert.equal("Fake Error!", reply, "Reply not sent correctly.");
 			done();
 		};
@@ -81,8 +89,11 @@ describe("Todo Controller", function() {
 
 	it("should be able to retrieve a list", function() {
 		/*Setup and mocking*/
+		var stubAuthCheck = sandbox.stub(dao, "userCanSeeList");
 		var stubGetItems = sandbox.stub(dao, "getItems");
 		var stubGetName = sandbox.stub(dao, "getListNameFromID");
+		
+		stubAuthCheck.yields(null, true);
 
 		stubGetName.yields(null, "List name");
 
@@ -105,6 +116,9 @@ describe("Todo Controller", function() {
 			params: {
 				id: 69
 			},
+			auth: {
+					credentials: "fakeuser"
+				},
 			raw: {
 				req: {
 					headers: {
@@ -130,6 +144,10 @@ describe("Todo Controller", function() {
 
 
 		/*Verification*/
+		assert(stubAuthCheck.called, "DAO was not called");
+		assert.equal("fakeuser", stubAuthCheck.args[0][0], "User ID not passed correctly.");
+		assert.equal(69, stubAuthCheck.args[0][1], "List ID not passed correctly.");
+		
 		assert(stubGetName.called, "DAO was not called");
 		assert.equal(69, stubGetItems.args[0][0], "List ID not passed correctly.");
 
@@ -153,6 +171,9 @@ describe("Todo Controller", function() {
 			params: {
 				id: 69
 			},
+			auth: {
+					credentials: "fakeuser"
+				},
 			raw: {
 				req: {
 					headers: {
@@ -189,7 +210,9 @@ describe("Todo Controller", function() {
 				name: "Item 1",
 				text: "The first item",
 				state: 0
-			},
+			},auth: {
+					credentials: "fakeuser"
+				},
 			raw: {
 				req: {
 					headers: {
@@ -224,7 +247,9 @@ describe("Todo Controller", function() {
 				name: "Item 1",
 				text: "The first item",
 				state: 0
-			},
+			},auth: {
+					credentials: "fakeuser"
+				},
 			raw: {
 				req: {
 					headers: {
