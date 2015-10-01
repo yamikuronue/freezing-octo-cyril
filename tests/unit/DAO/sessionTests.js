@@ -10,7 +10,7 @@ describe("The session store", function() {
 
 	beforeEach(function() {
 		sandbox = sinon.sandbox.create();
-		sinon.stub(redis, 'createClient', fakeRedis.createClient);
+		dao.client = fakeRedis.createClient();
 	});
 	
 	afterEach(function() {
