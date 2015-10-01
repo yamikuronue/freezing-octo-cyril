@@ -1,16 +1,25 @@
 var async = require ("async");
 var sinon = require("sinon");
 var fakeRedis = require("fakeredis");
-
-var dao = require("../../../src/dao/session");
+var redis = require("redis")
 
 var assert = require("chai").assert;
 
 describe("The session store", function() {
+	var dao;
 
+	before(function() {
+		sinon.stub(redis, "createClient", fakeRedis.createClient );
+		dao = require("../../../src/dao/session");
+	});
+
+	after(function() {
+		redis.createClient.restore();
+	});
+	
 	beforeEach(function() {
 		sandbox = sinon.sandbox.create();
-		dao.client = fakeRedis.createClient();
+		
 	});
 	
 	afterEach(function() {
