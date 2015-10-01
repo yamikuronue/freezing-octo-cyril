@@ -1,5 +1,6 @@
 var sinon = require("sinon");
 var sandbox; 
+var fakeRedis = require("fakeredis");
 
 var dao = require("../../../src/dao/todoItems");
 var sessionDao = require("../../../src/dao/session");
