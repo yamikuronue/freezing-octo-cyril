@@ -2,7 +2,7 @@ var fs = require("fs");
 var sqlite3 = require("sqlite3").verbose();
 sqlite3.verbose();
 var IsThere = require("is-there");
-var bcrypt = require("bcrypt");
+var bcrypt = require("bcryptjs");
 var Q = require("q");
 
 function errorprint(err){
