@@ -4,7 +4,7 @@ var redis = require("redis"),
 module.exports = {
 	version: "1.0",
 
-	client = redis.createClient(),
+	client : redis.createClient(),
 
 	generateSession: function(userID, callback) {
 		var sessionID = uuid.v1();
