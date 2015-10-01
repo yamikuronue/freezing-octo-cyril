@@ -2,6 +2,7 @@ var sinon = require("sinon");
 var sandbox; 
 
 var dao = require("../../../src/dao/todoItems");
+var sessionDao = require("../../../src/dao/session");
 var controller = require("../../../src/controller/TodoController");
 
 var assert = require("chai").assert;
@@ -10,6 +11,7 @@ var accepts = require("accepts");
 describe("Todo Controller", function() {
 	beforeEach(function() {
 		sandbox = sinon.sandbox.create();
+		sessionDao.client = fakeRedis.createClient();
 	});
 	
 	afterEach(function() {
